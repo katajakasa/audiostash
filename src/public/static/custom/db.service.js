@@ -1,6 +1,6 @@
 'use strict';
 
-app.factory('dbService', ['$indexedDB', 'sock', '$timeout', function($indexedDB, sock, $timeout){
+app.factory('DataService', ['$indexedDB', 'sock', '$timeout', function($indexedDB, sock, $timeout){
     var svc = null;
 
     function sync_check_start() {

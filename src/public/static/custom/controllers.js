@@ -1,9 +1,9 @@
 'use strict';
 
-app.controller('RootCtrl', ['$scope', 'dbService', 'sock',
+app.controller('RootCtrl', ['$scope', 'DataService', 'sock',
   function($scope, dbService, sock) {
     sock.setHandler("open", function() {
-      dbService.start();
+      AuthService.authenticate();
     });
   }
 ]);

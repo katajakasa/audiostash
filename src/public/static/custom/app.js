@@ -48,26 +48,17 @@ app.config(['$routeProvider',
       when('/dashboard', {
         templateUrl: '/partials/dashboard.html',
       }).
+      when('/login', {
+        templateUrl: '/partials/login.html',
+      }).
+      when('/albums', {
+        templateUrl: '/partials/albums.html',
+      }).
+      when('/playlists', {
+        templateUrl: '/partials/playlists.html',
+      }).
       otherwise({
         redirectTo: '/dashboard'
       });
   }
 ]);
-
-    /*
-      when('/login', {
-        templateUrl: 'tpl/partials/login.html',
-        controller: 'LoginCtrl'
-      }).
-      when('/front', {
-        templateUrl: 'tpl/partials/front.html',
-        controller: 'IndexCtrl'
-      }).
-      when('/albums', {
-        templateUrl: 'tpl/partials/albums.html',
-        controller: 'AlbumsCtrl'
-      }).
-      when('/playlists', {
-        templateUrl: 'tpl/partials/playlists.html',
-        controller: 'PlaylistsCtrl'
-      }).*/
