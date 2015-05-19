@@ -47,5 +47,4 @@ LOGFILE = None
 DBFILE = os.path.join(BASEDIR, "audiostash.db")
 
 # No point in changing these
-STATIC_PATH = os.path.join(BASEDIR, "static")
-TEMPLATE_PATH = os.path.join(BASEDIR, "tpl")
+PUBLIC_PATH = os.path.join(BASEDIR, "public")

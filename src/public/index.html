@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-app='audiostash'>
+<html lang="en" ng-app='audiostash' ng-controller="RootCtrl">
 <head>
     <meta charset="utf-8" />
     <title>AudioStash</title>
@@ -24,6 +24,34 @@
     <script type="text/javascript" src="/static/custom/dbservice.js"></script>
 </head>
 <body>
-<ng-view></ng-view>
+	<nav class="navbar navbar-default navbar-static-top">
+	    <div class="container-fluid">
+		    <div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#topnav">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+		    	<a class="navbar-brand" href="https://github.com/katajakasa/audiostash">AudioStash</a>
+		    </div>
+			<div class="collapse navbar-collapse" id="topnav">
+				<ul class="nav navbar-nav">
+                    <li id="link_home" class="active"><a href="#/dashboard">Dashboard</a></li>
+                    <li id="link_albums"><a href="#">Albums</a></li>
+                    <li id="link_artists"><a href="#">Artists</a></li>
+                    <li id="link_directories"><a href="#">Directories</a></li>
+                    <li id="link_playlists"><a href="#">Playlists</a></li>
+                    <li id="link_settings"><a href="#">Settings</a></li>
+                    <li><a href="#">Logout</a></li>
+			    </ul>
+			</div>
+	    </div>
+	</nav>
+	<div class="container-fluid">
+		<div class="row">
+            <ng-view></ng-view>
+		</div>
+	</div>
 </body>
 </html>

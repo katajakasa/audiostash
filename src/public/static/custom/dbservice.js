@@ -1,10 +1,11 @@
 'use strict';
 
-app.factory('pollingService', ['indexedDB', 'sock', function($indexedDB, sock){
+app.factory('dbService', ['$indexedDB', 'sock', '$timeout', function($indexedDB, sock, $timeout){
     var svc = null;
 
     function sync_check_start() {
         console.log("sync_check_start");
+        sock.send("Ping");
         sync_init();
     }
 

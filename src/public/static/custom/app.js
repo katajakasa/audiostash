@@ -45,11 +45,11 @@ app.config(['$routeProvider',
   function($routeProvider) {
     console.log("routes");
     $routeProvider.
-      when('/', {
-        controller: 'RootCtrl'
+      when('/dashboard', {
+        templateUrl: '/partials/dashboard.html',
       }).
       otherwise({
-        redirectTo: '/'
+        redirectTo: '/dashboard'
       });
   }
 ]);

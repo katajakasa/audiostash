@@ -11,9 +11,9 @@ from sockjs.tornado import SockJSRouter, SockJSConnection
 class AudioStashSock(SockJSConnection):
     clients = set()
 
-    def __init__(self):
+    def __init__(self, session):
         self.authenticated = False
-        super(AudioStashSock, self).__init__(self)
+        super(AudioStashSock, self).__init__(session)
 
     def send_error(self, message, code):
         return self.send(json.dumps({
@@ -34,26 +34,25 @@ class AudioStashSock(SockJSConnection):
         self.authenticated = False
         self.clients.add(self)
         print("Connection accepted")
-        print(info)
 
     def on_message(self, message):
         print("Message: {}.".format(message))
 
     def on_close(self):
         self.clients.remove(self)
+        print("Connection closed")
         return super(AudioStashSock, self).on_close()
 
 
 class IndexHandler(web.RequestHandler):
     def get(self):
-        self.render(os.path.join(settings.TEMPLATE_PATH, "index.html"))
+        self.render(os.path.join(settings.PUBLIC_PATH, "index.html"))
 
 
 if __name__ == '__main__':
     print("Starting AudioStash server on port {}.".format(settings.PORT))
     if settings.DEBUG:
-        print("Static path = {}".format(settings.STATIC_PATH))
-        print("Template path = {}".format(settings.TEMPLATE_PATH))
+        print("Public path = {}".format(settings.PUBLIC_PATH))
         print("Database path = {}".format(settings.DBFILE))
 
     # Set up database
@@ -64,13 +63,13 @@ if __name__ == '__main__':
 
     # Index and static handlers
     handlers = [
-        (r'/', IndexHandler),
+        (r'/static/(.*)', web.StaticFileHandler, {'path': os.path.join(settings.PUBLIC_PATH, "static")}),
+        (r'/partials/(.*)', web.StaticFileHandler, {'path': os.path.join(settings.PUBLIC_PATH, "partials")}),
+        (r'/', IndexHandler)
     ] + router.urls
     
     conf = {
         'debug': settings.DEBUG,
-        'static_path': settings.STATIC_PATH,
-        'static_prefix': "/static",
     }
 
     # Start up everything
