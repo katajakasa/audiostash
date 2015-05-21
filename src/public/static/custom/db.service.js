@@ -5,7 +5,7 @@ app.factory('DataService', ['$indexedDB', 'sock', '$timeout', function($indexedD
 
     function sync_check_start() {
         console.log("sync_check_start");
-        sock.send("Ping");
+        sock.send("{}");
         sync_init();
     }
 
