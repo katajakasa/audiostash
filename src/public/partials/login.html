@@ -1,0 +1,17 @@
+
+<div class="container-fluid">
+    <div class="col-sm-6 col-lg-4">
+        <h2>Login</h2>
+        <form name="loginForm" role="form" ng-controller="LoginController" ng-submit="login(credentials)" novalidate>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" class="form-control" id="username" ng-model="credentials.username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" class="form-control" id="password" ng-model="credentials.password">
+            </div>
+            <button type="submit" class="btn btn-default">Login</button>
+        </form>
+    </div>
+</div>

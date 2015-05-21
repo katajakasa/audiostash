@@ -84,6 +84,27 @@ class Log(Base):
     updated = Column(DateTime(timezone=True), default=func.now())
 
 
+USERLEVELS = {
+    'none': 0,
+    'user': 1,
+    'admin': 2,
+}
+
+class User(Base):
+    __tablename__ = "user"
+    id = Column(Integer, primary_key=True)
+    username = Column(String(32), unique=True)
+    password = Column(String(255))
+    level = Column(Integer, default=USERLEVELS['none'])
+
+
+class Session(Base):
+    __tablename__ = "session"
+    key = Column(String(32), primary_key=True)
+    user = Column(ForeignKey('user.id'))
+    start = Column(DateTime(timezone=True), default=func.now())
+
+
 _session = sessionmaker()
 
 def database_init(dbfile):

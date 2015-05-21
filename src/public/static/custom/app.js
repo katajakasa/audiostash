@@ -43,19 +43,36 @@ app.factory('sock', function(socketFactory) {
 
 app.config(['$routeProvider',
   function($routeProvider) {
-    console.log("routes");
     $routeProvider.
-      when('/dashboard', {
-        templateUrl: '/partials/dashboard.html',
-      }).
       when('/login', {
         templateUrl: '/partials/login.html',
       }).
+      when('/logout', {
+        templateUrl: '/partials/logout.html',
+      }).
+      when('/dashboard', {
+        templateUrl: '/partials/dashboard.html',
+        controller: 'AuthCheckController',
+      }).
       when('/albums', {
         templateUrl: '/partials/albums.html',
+        controller: 'AuthCheckController',
+      }).
+      when('/artists', {
+        templateUrl: '/partials/artists.html',
+        controller: 'AuthCheckController',
+      }).
+      when('/directories', {
+        templateUrl: '/partials/directories.html',
+        controller: 'AuthCheckController',
+      }).
+      when('/settings', {
+        templateUrl: '/partials/settings.html',
+        controller: 'AuthCheckController',
       }).
       when('/playlists', {
         templateUrl: '/partials/playlists.html',
+        controller: 'AuthCheckController',
       }).
       otherwise({
         redirectTo: '/dashboard'

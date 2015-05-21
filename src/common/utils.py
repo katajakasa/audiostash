@@ -2,6 +2,8 @@
 
 import sys
 import re
+import os
+import base64
 
 """ Attempt to decode path with correct encoding """
 def decode_path(name):
@@ -37,3 +39,7 @@ def get_or_create(session, model, **kwargs):
         session.add(instance)
         session.commit()
         return instance
+
+""" Generates a session ID. Secure enough. """
+def generate_session():
+    return base64.b64encode(os.urandom(16))

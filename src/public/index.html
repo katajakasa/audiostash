@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-app='audiostash' ng-controller="RootCtrl">
+<html lang="en" ng-app='audiostash'>
 <head>
     <meta charset="utf-8" />
     <title>AudioStash</title>
@@ -20,11 +20,12 @@
     <!-- Our own stuff -->
     <link rel="stylesheet" href="/static/custom/site.css" type="text/css" />
     <script type="text/javascript" src="/static/custom/app.js"></script>
+    <script type="text/javascript" src="/static/custom/constants.js"></script>
     <script type="text/javascript" src="/static/custom/controllers.js"></script>
     <script type="text/javascript" src="/static/custom/db.service.js"></script>
     <script type="text/javascript" src="/static/custom/auth.service.js"></script>
 </head>
-<body>
+<body ng-controller="RootController">
 	<nav class="navbar navbar-default navbar-static-top">
 	    <div class="container-fluid">
 		    <div class="navbar-header">
@@ -37,15 +38,16 @@
 		    	<a class="navbar-brand" href="https://github.com/katajakasa/audiostash">AudioStash</a>
 		    </div>
 			<div class="collapse navbar-collapse" id="topnav">
-				<ul class="nav navbar-nav">
-                    <li id="link_home" class="active"><a href="#/dashboard">Dashboard</a></li>
-                    <li id="link_albums"><a href="#">Albums</a></li>
-                    <li id="link_artists"><a href="#">Artists</a></li>
-                    <li id="link_directories"><a href="#">Directories</a></li>
-                    <li id="link_playlists"><a href="#">Playlists</a></li>
-                    <li id="link_settings"><a href="#">Settings</a></li>
-                    <li><a href="#">Logout</a></li>
-			    </ul>
+                <ul class="nav navbar-nav" ng-controller="NavController">
+                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/dashboard')}"><a href="#/dashboard">Dashboard</a></li>
+                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/albums')}"><a href="#/albums">Albums</a></li>
+                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/artists')}"><a href="#/artists">Artists</a></li>
+                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/directories')}"><a href="#/directories">Directories</a></li>
+                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/playlists')}"><a href="#/playlists">Playlists</a></li>
+                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/settings')}"><a href="#/settings">Settings</a></li>
+                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/logout')}"><a href="#/logout">Logout</a></li>
+                    <li ng-if="is_authenticated() == false" ng-class="{ active: is_active('/login')}"><a href="#/login">Login</a></li>
+                </ul>
 			</div>
 	    </div>
 	</nav>
