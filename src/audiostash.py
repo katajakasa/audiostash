@@ -3,6 +3,9 @@
 import json
 import os
 import settings
+
+from common.stashlog import StashLog
+
 from passlib.hash import pbkdf2_sha256
 from common.tables import database_init, session_get, User, Session
 from common.utils import generate_session
@@ -39,13 +42,13 @@ class AudioStashSock(SockJSConnection):
     def on_open(self, info):
         self.authenticated = False
         self.clients.add(self)
-        print("Connection accepted")
+        self.log.debug("Connection accepted")
 
     def on_message(self, raw_message):
         # Load packet and parse as JSON
         try:
             message = json.loads(raw_message)
-            print("Message: {}.".format(raw_message))
+            self.log.debug("Message: {}.".format(raw_message))
         except ValueError:
             self.send_error('none', "Invalid JSON", 500)
             return
@@ -70,7 +73,7 @@ class AudioStashSock(SockJSConnection):
                 self.sid = sid
                 self.authenticated = True
 
-                print("Authenticated with '{}'.".format(self.sid))
+                self.log.debug("Authenticated with '{}'.".format(self.sid))
 
                 # Send login success message
                 self.send_message('auth', {
@@ -80,7 +83,7 @@ class AudioStashSock(SockJSConnection):
                 })
                 return
             self.send_error('auth', "Invalid session", 403)
-            print("Authentication failed.")
+            self.log.debug("Authentication failed.")
             return
 
         elif packet_type == 'logout':
@@ -90,7 +93,7 @@ class AudioStashSock(SockJSConnection):
             s.commit()
 
             # Dump out log
-            print("Logged out '{}'.".format(self.sid))
+            self.log.debug("Logged out '{}'.".format(self.sid))
 
             # Disauthenticate & clear session ID
             self.authenticated = False
@@ -122,7 +125,7 @@ class AudioStashSock(SockJSConnection):
                 self.authenticated = True
 
                 # Dump out log
-                print("Logged in '{}'.".format(self.sid))
+                self.log.debug("Logged in '{}'.".format(self.sid))
 
                 # TODO: Cleanup old sessions
 
@@ -137,11 +140,11 @@ class AudioStashSock(SockJSConnection):
             self.send_error('login', "Invalid username or password", 403)
             return
         else:
-            print("other")
+            self.log.debug("other")
 
     def on_close(self):
         self.clients.remove(self)
-        print("Connection closed")
+        self.log.debug("Connection closed")
         return super(AudioStashSock, self).on_close()
 
 
@@ -151,10 +154,11 @@ class IndexHandler(web.RequestHandler):
 
 
 if __name__ == '__main__':
-    print("Starting AudioStash server on port {}.".format(settings.PORT))
+    log = StashLog(debug=settings.DEBUG, level=settings.LOG_LEVEL, logfile=settings.STASH_LOGFILE)
+    log.info("Starting AudioStash server on port {}.".format(settings.PORT))
     if settings.DEBUG:
-        print("Public path = {}".format(settings.PUBLIC_PATH))
-        print("Database path = {}".format(settings.DBFILE))
+        log.debug("Public path = {}".format(settings.PUBLIC_PATH))
+        log.debug("Database path = {}".format(settings.DBFILE))
 
     # Set up database
     database_init(settings.DBFILE)
@@ -175,6 +179,6 @@ if __name__ == '__main__':
 
     # Start up everything
     app = web.Application(handlers, **conf)
-    app.listen(settings.PORT, no_keep_alive=True)
+    app.listen(settings.PORT,  no_keep_alive=True)
     ioloop.IOLoop.instance().start()
-    print("Stopping AudioStash server.")
+    log.info("Stopping AudioStash server.")

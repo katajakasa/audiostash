@@ -40,8 +40,11 @@ DAEMON_SCAN_FILES = [
 # Logfile for the daemon. If debugmode is on and this is None, then stdout will be used for log output.
 # If this value points to a logfile, that will be used.
 # If debugmode is off and this is None, only database log will be used.
-LOGFILE = None
-# LOGFILE = "/var/log/audiostash.log"
+STASH_LOGFILE = None
+SCAND_LOGFILE = None
+LOG_LEVEL=0
+# STASH_LOGFILE = "/var/log/audiostash.log"
+# SCAND_LOGFILE = "/var/log/audiostash-scand.log"
 
 # Database file location. Currently only sqlite3 is supported.
 DBFILE = os.path.join(BASEDIR, "audiostash.db")
