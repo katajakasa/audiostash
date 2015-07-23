@@ -58,6 +58,7 @@ class Track(Base):
     __tablename__ = "track"
     id = Column(Integer, primary_key=True)
     file = Column(String(255))
+    type = Column(String(8))
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
     album = Column(ForeignKey('album.id'))
     dir = Column(ForeignKey('directory.id'))
