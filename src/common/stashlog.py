@@ -27,17 +27,17 @@ class StashLog(object):
                 f.flush()
 
     def debug(self, msg):
-        if self.level >= 0:
+        if self.level <= 1:
             self.write('D', msg)
 
     def info(self, msg):
-        if self.level >= 1:
+        if self.level < 2:
             self.write('I', msg)
 
     def warning(self, msg):
-        if self.level >= 2:
+        if self.level < 3:
             self.write('W', msg)
 
     def error(self, msg):
-        if self.level >= 2:
+        if self.level < 4:
             self.write('E', msg)
