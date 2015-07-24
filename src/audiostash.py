@@ -181,7 +181,6 @@ class TrackHandler(web.RequestHandler):
             range_start, range_end = range_bytes[6:].split("-")
             range_end = None if range_end is "" else int(range_end)
             range_start = int(range_start)
-            print("Streaming range: {} - {}".format(range_start, range_end))
 
         # Set streaming headers
         self.set_status(206)
@@ -205,8 +204,6 @@ class TrackHandler(web.RequestHandler):
 
         # Set length headers (take into account range start point)
         self.set_header("Content-Length", left)
-
-        print("Content-Length: {}".format(left))
 
         # Flush headers
         self.flush()
