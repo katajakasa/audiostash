@@ -240,7 +240,9 @@ class TrackHandler(web.RequestHandler):
                     self.write(data[start:send])
                     self.flush()
                     left -= send
-                pos += send
+                    pos += send
+                else:
+                    pos += bsize
 
         # Flush the last bytes before finishing up.
         log.debug("Finished streaming {}".format(song.file))
