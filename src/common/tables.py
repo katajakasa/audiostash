@@ -59,6 +59,8 @@ class Track(Base):
     id = Column(Integer, primary_key=True)
     file = Column(String(255))
     type = Column(String(8))
+    bytes_len = Column(Integer)
+    bytes_tc_len = Column(Integer)
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
     album = Column(ForeignKey('album.id'))
     dir = Column(ForeignKey('directory.id'))

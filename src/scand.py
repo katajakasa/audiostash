@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
-from datetime import datetime
 import mutagen
 import argparse
 import signal
@@ -14,6 +12,7 @@ from common.utils import decode_path, match_track_filename, get_or_create
 import settings
 from twisted.internet import reactor
 from sqlalchemy.orm.exc import NoResultFound
+import audiotranscode
 
 _ver = "v0.1"
 _name = "Audiostash Indexer Daemon " + _ver
@@ -65,6 +64,19 @@ class Scanner(object):
 
         # Create a new entry for track
         track = Track(file=path, album=1, artist=1)
+        track.type = ext[1:]
+
+        # Check if we need to find track transcoded length
+        # If not, just set it to file length.
+        track.bytes_len = os.path.getsize(path)
+        if track.type not in settings.NO_TRANSCODE_FORMATS:
+            at = audiotranscode.AudioTranscode()
+            maxlen = 0
+            for data in at.transcode_stream(path, settings.TRANSCODE_FORMAT):
+                maxlen += len(data)
+            track.bytes_tc_len = maxlen
+        else:
+            track.bytes_tc_len = track.bytes_len
 
         if m:
             # Find artist
@@ -83,7 +95,7 @@ class Scanner(object):
             track_title = self._get_tag(m, (u'©nam', 'TIT2', 'Title', 'TITLE', 'TRACK TITLE',
                                             'TRACKTITLE', 'TrackTitle', 'Track Title'))
 
-            # Find track
+            # Find track number
             track.track = self._get_tag_int(m, ('TRCK', 'Track', 'TRACK', 'TRACK', 'TRACKNUMBER'))
             
             # Find date
@@ -353,7 +365,7 @@ class Scanner(object):
         database_ensure_initial()
 
     def scan_all(self):
-        self.log.info(u"Scanning ...")
+        self.log.info(u"Scanning everything ...")
         self.process_files()
         self.postprocess_deleted()
         self.postprocess_albums()

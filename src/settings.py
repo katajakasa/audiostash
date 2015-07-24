@@ -4,10 +4,16 @@
 import os
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
-# Feel free to change these
-PORT = 8000  # Port for the server.
-DEBUG = True  # Debug mode. Should be True for developing, False otherwise.
-MUSIC_DIRECTORY = "Z:\\"  # Where your music can be found
+# Port for the server.
+PORT = 8000
+
+# Debug mode.
+# If true, the daemons will print on commandline instead of logfile.
+# Set False for production, True for development.
+DEBUG = True
+
+# Where your music can be found
+MUSIC_DIRECTORY = "Z:\\"
 
 # Cover filename hints (looks for eg. cover_*.<ext> in album path.
 COVER_HINTS = [
@@ -37,14 +43,31 @@ DAEMON_SCAN_FILES = [
     '.wav'
 ]
 
-# Logfile for the daemon. If debugmode is on and this is None, then stdout will be used for log output.
+# Don't transcode these (Note: Without prefix dot!)
+NO_TRANSCODE_FORMATS = [
+    'mp3',
+    'ogg'
+]
+
+# Format to transcode to (mp3 is best, ogg may work)
+# Note: If you change this, remember to clear your database!
+# Note: Without prefix dot!
+TRANSCODE_FORMAT = 'mp3'
+
+# Logfile for the daemon. If debugmode is on, then stdout will be used for log output.
 # If this value points to a logfile, that will be used.
-# If debugmode is off and this is None, only database log will be used.
-STASH_LOGFILE = None
-SCAND_LOGFILE = None
-LOG_LEVEL=0
+
 # STASH_LOGFILE = "/var/log/audiostash.log"
+STASH_LOGFILE = None
+
 # SCAND_LOGFILE = "/var/log/audiostash-scand.log"
+SCAND_LOGFILE = None
+
+# Level 0 = Debug|Info|Warning|Error
+# Level 1 = Info|Warning|Error
+# Level 2 = Warning|Error
+# Level 3 = Error
+LOG_LEVEL = 0
 
 # Database file location. Currently only sqlite3 is supported.
 DBFILE = os.path.join(BASEDIR, "audiostash.db")

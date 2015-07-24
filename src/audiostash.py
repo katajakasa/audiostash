@@ -3,15 +3,19 @@
 import json
 import os
 import settings
+import mimetypes
 
 from common.stashlog import StashLog
 
 from passlib.hash import pbkdf2_sha256
-from common.tables import database_init, session_get, User, Session
+from common.tables import database_init, session_get, User, Session, Track
 from common.utils import generate_session
-from tornado import web, ioloop
+from tornado import web, ioloop, gen
 from sockjs.tornado import SockJSRouter, SockJSConnection
 from sqlalchemy.orm.exc import NoResultFound
+import audiotranscode
+
+log = None
 
 
 class AudioStashSock(SockJSConnection):
@@ -23,32 +27,36 @@ class AudioStashSock(SockJSConnection):
         super(AudioStashSock, self).__init__(session)
 
     def send_error(self, mtype, message, code):
-        return self.send(json.dumps({
+        msg = json.dumps({
             'type': mtype,
             'error': 1,
             'data': {
                 'code': code,
                 'message': message
             }
-        }))
+        })
+        log.debug("Sending error {}".format(msg))
+        return self.send(msg)
 
     def send_message(self, mtype, message):
-        return self.send(json.dumps({
+        msg = json.dumps({
             'type': mtype,
             'error': 0,
             'data': message,
-        }))
+        })
+        log.debug("Sending message {}".format(msg))
+        return self.send(msg)
 
     def on_open(self, info):
         self.authenticated = False
         self.clients.add(self)
-        self.log.debug("Connection accepted")
+        log.debug("Connection accepted")
 
     def on_message(self, raw_message):
         # Load packet and parse as JSON
         try:
             message = json.loads(raw_message)
-            self.log.debug("Message: {}.".format(raw_message))
+            log.debug("Message: {}.".format(raw_message))
         except ValueError:
             self.send_error('none', "Invalid JSON", 500)
             return
@@ -73,7 +81,7 @@ class AudioStashSock(SockJSConnection):
                 self.sid = sid
                 self.authenticated = True
 
-                self.log.debug("Authenticated with '{}'.".format(self.sid))
+                log.debug("Authenticated with '{}'.".format(self.sid))
 
                 # Send login success message
                 self.send_message('auth', {
@@ -83,7 +91,7 @@ class AudioStashSock(SockJSConnection):
                 })
                 return
             self.send_error('auth', "Invalid session", 403)
-            self.log.debug("Authentication failed.")
+            log.debug("Authentication failed.")
             return
 
         elif packet_type == 'logout':
@@ -93,7 +101,7 @@ class AudioStashSock(SockJSConnection):
             s.commit()
 
             # Dump out log
-            self.log.debug("Logged out '{}'.".format(self.sid))
+            log.debug("Logged out '{}'.".format(self.sid))
 
             # Disauthenticate & clear session ID
             self.authenticated = False
@@ -125,7 +133,7 @@ class AudioStashSock(SockJSConnection):
                 self.authenticated = True
 
                 # Dump out log
-                self.log.debug("Logged in '{}'.".format(self.sid))
+                log.debug("Logged in '{}'.".format(self.sid))
 
                 # TODO: Cleanup old sessions
 
@@ -140,17 +148,104 @@ class AudioStashSock(SockJSConnection):
             self.send_error('login', "Invalid username or password", 403)
             return
         else:
-            self.log.debug("other")
+            log.debug("other")
 
     def on_close(self):
         self.clients.remove(self)
-        self.log.debug("Connection closed")
+        log.debug("Connection closed")
         return super(AudioStashSock, self).on_close()
 
 
 class IndexHandler(web.RequestHandler):
     def get(self):
         self.render(os.path.join(settings.PUBLIC_PATH, "index.html"))
+
+
+class TrackHandler(web.RequestHandler):
+    @web.asynchronous
+    @gen.coroutine
+    def get(self, song_id):
+        # Find the song we want
+        try:
+            song = session_get().query(Track).filter_by(id=song_id).one()
+        except NoResultFound:
+            self.set_status(404)
+            self.finish("404")
+            return
+
+        # See if we got range
+        range_bytes = self.request.headers.get('Range')
+        range_start = 0
+        range_end = None
+        if range_bytes:
+            range_start, range_end = range_bytes[6:].split("-")
+            range_end = None if range_end is "" else int(range_end)
+            range_start = int(range_start)
+            print("Streaming range: {} - {}".format(range_start, range_end))
+
+        # Set streaming headers
+        self.set_status(206)
+        self.set_header("Accept-Ranges", "bytes")
+
+        # Find content length and type
+        if song.type in settings.NO_TRANSCODE_FORMATS:
+            size = song.bytes_len
+            self.set_header("Content-Type", mimetypes.guess_type("file://"+song.file)[0])
+        else:
+            size = song.bytes_tc_len
+            self.set_header("Content-Type", "audio/mpeg")
+
+        # If the client didn't send range header, just stop here
+        if not range_bytes:
+            self.finish()
+            return
+
+        # Set length headers (take into account range start point)
+        left = size - range_start
+        self.set_header("Content-Length", left)
+
+        # Set range headers
+        if range_end:
+            left = (range_end+1) - range_start
+            self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end-1, size))
+        else:
+            self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, size-1, size))
+
+        # If the format is already mp3 or ogg, just stream out.
+        # If format is something else, attempt to transcode.
+        if song.type in settings.NO_TRANSCODE_FORMATS:
+            log.debug("Direct streaming {}".format(song.file))
+            with open(song.file, 'rb') as f:
+                f.seek(range_start)
+
+                # Just read as long as we have data to read.
+                while left:
+                    data = f.read(left if left < 8192 else 8192)
+                    left -= len(data)
+                    if data is None or len(data) == 0:
+                        break
+                    self.write(data)
+                    self.flush()
+        else:
+            log.debug("Transcoding {}".format(song.file))
+            pos = 0
+
+            # Transcode from starting point
+            at = audiotranscode.AudioTranscode()
+            for data in at.transcode_stream(song.file, settings.TRANSCODE_FORMAT):
+                bsize = len(data)
+                if pos + bsize >= range_start:
+                    start = 0 if pos > range_start else range_start-pos
+                    send = bsize if bsize < left else left
+                    self.write(data[start:send])
+                    self.flush()
+                    left -= send
+                pos += send
+
+        # Flush the last bytes before finishing up.
+        log.debug("Finished streaming {}".format(song.file))
+        self.flush()
+        self.finish()
 
 
 if __name__ == '__main__':
@@ -163,6 +258,9 @@ if __name__ == '__main__':
     # Set up database
     database_init(settings.DBFILE)
 
+    # Set up mimetypes
+    mimetypes.init()
+
     # SockJS interface
     router = SockJSRouter(AudioStashSock, '/sock')
 
@@ -170,6 +268,7 @@ if __name__ == '__main__':
     handlers = [
         (r'/static/(.*)', web.StaticFileHandler, {'path': os.path.join(settings.PUBLIC_PATH, "static")}),
         (r'/partials/(.*)', web.StaticFileHandler, {'path': os.path.join(settings.PUBLIC_PATH, "partials")}),
+        (r'/track/(\d+)', TrackHandler),
         (r'/', IndexHandler)
     ] + router.urls
     
