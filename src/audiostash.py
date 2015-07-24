@@ -195,21 +195,16 @@ class TrackHandler(web.RequestHandler):
             size = song.bytes_tc_len
             self.set_header("Content-Type", "audio/mpeg")
 
-        # If the client didn't send range header, just stop here
-        if not range_bytes:
-            self.finish()
-            return
-
-        # Set length headers (take into account range start point)
-        left = size - range_start
-        self.set_header("Content-Length", left)
-
         # Set range headers
+        left = size - range_start
         if range_end:
             left = (range_end+1) - range_start
             self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end-1, size))
         else:
             self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, size-1, size))
+
+        # Set length headers (take into account range start point)
+        self.set_header("Content-Length", left)
 
         # If the format is already mp3 or ogg, just stream out.
         # If format is something else, attempt to transcode.
