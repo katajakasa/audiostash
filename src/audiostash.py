@@ -199,12 +199,17 @@ class TrackHandler(web.RequestHandler):
         left = size - range_start
         if range_end:
             left = (range_end+1) - range_start
-            self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end-1, size))
+            self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end, size))
         else:
             self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, size-1, size))
 
         # Set length headers (take into account range start point)
         self.set_header("Content-Length", left)
+
+        print("Content-Length: {}".format(left))
+
+        # Flush headers
+        self.flush()
 
         # If the format is already mp3 or ogg, just stream out.
         # If format is something else, attempt to transcode.
@@ -229,15 +234,20 @@ class TrackHandler(web.RequestHandler):
             at = audiotranscode.AudioTranscode()
             for data in at.transcode_stream(song.file, settings.TRANSCODE_FORMAT):
                 bsize = len(data)
-                if pos + bsize >= range_start:
+                if pos + bsize > range_start:
                     start = 0 if pos > range_start else range_start-pos
-                    send = bsize if bsize < left else left
-                    self.write(data[start:send])
+                    send = bsize-start if bsize-start < left else left
+                    out = data[start:send]
+                    self.write(out)
                     self.flush()
-                    left -= send
-                    pos += send
+                    left -= len(out)
+                    pos += len(out)
                 else:
                     pos += bsize
+
+                # Stop if no data left
+                if left <= 0:
+                    break
 
         # Flush the last bytes before finishing up.
         log.debug("Finished streaming {}".format(song.file))
