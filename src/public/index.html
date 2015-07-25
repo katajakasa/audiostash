@@ -14,39 +14,34 @@
     <script type="text/javascript" src="/static/lib/angular-bootstrap-0.13.0/ui-bootstrap-tpls.min.js"></script>
     <script type="text/javascript" src="/static/lib/angular-route-1.3.16/angular-route.min.js"></script>
     <script type="text/javascript" src="/static/lib/angular-sockjs-0.1/angular-sockjs.min.js"></script>
-    <script type="text/javascript" src="/static/lib/angular-indexed-db-1.1.1/angular-indexed-db.min.js"></script>
+    <script type="text/javascript" src="/static/lib/angular-indexed-db-1.1.3/angular-indexed-db.min.js"></script>
+    <script type="text/javascript" src="/static/lib/soundmanagerv297a/script/soundmanager2-nodebug-jsmin.js"></script>
     <script type="text/javascript" src="/static/lib/ui-grid-3.0.0-rc.21/ui-grid.min.js"></script>
+    <script type="text/javascript" src="/static/lib/bar-ui/script/bar-ui.js"></script>
     
     <!-- Our own stuff -->
-    <link rel="stylesheet" href="/static/custom/site.css" type="text/css" />
+    <link rel="stylesheet" href="/static/lib/bar-ui/css/bar-ui.css" type="text/css" />
+    <link rel="stylesheet" href="/static/style/site.css" type="text/css" />
     <script type="text/javascript" src="/static/custom/app.js"></script>
     <script type="text/javascript" src="/static/custom/constants.js"></script>
     <script type="text/javascript" src="/static/custom/controllers.js"></script>
     <script type="text/javascript" src="/static/custom/db.service.js"></script>
     <script type="text/javascript" src="/static/custom/auth.service.js"></script>
+    <script type="text/javascript" src="/static/custom/sock.service.js"></script>
+    <script type="text/javascript" src="/static/custom/playlist.service.js"></script>
+    <script type="text/javascript" src="/static/custom/utils.js"></script>
 </head>
-<body ng-controller="RootController">
+<body>
 	<nav class="navbar navbar-default navbar-static-top">
 	    <div class="container-fluid">
 		    <div class="navbar-header">
-				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#topnav">
-					<span class="sr-only">Toggle navigation</span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-				</button>
 		    	<a class="navbar-brand" href="https://github.com/katajakasa/audiostash">AudioStash</a>
 		    </div>
-			<div class="collapse navbar-collapse" id="topnav">
+			<div class="" id="topnav">
                 <ul class="nav navbar-nav" ng-controller="NavController">
-                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/dashboard')}"><a href="#/dashboard">Dashboard</a></li>
-                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/albums')}"><a href="#/albums">Albums</a></li>
-                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/artists')}"><a href="#/artists">Artists</a></li>
-                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/directories')}"><a href="#/directories">Directories</a></li>
-                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/playlists')}"><a href="#/playlists">Playlists</a></li>
-                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/settings')}"><a href="#/settings">Settings</a></li>
-                    <li ng-if="is_authenticated() == true" ng-class="{ active: is_active('/logout')}"><a href="#/logout">Logout</a></li>
-                    <li ng-if="is_authenticated() == false" ng-class="{ active: is_active('/login')}"><a href="#/login">Login</a></li>
+                    <li ng-repeat="site in sites" ng-if="is_visible(site.url)" ng-class="{ active: is_active(site.url) }">
+                        <a href="#{{ site.url }}">{{ site.name }}</a>
+                    </li>
                 </ul>
 			</div>
 	    </div>
@@ -56,5 +51,94 @@
             <ng-view></ng-view>
 		</div>
 	</div>
+    <div class="audio_player" ng-controller="PlayerController">
+        <div class="sm2-bar-ui full-width fixed" ng-show="is_visible()">
+            <div class="bd sm2-main-controls">
+                <div class="sm2-inline-texture"></div>
+                <div class="sm2-inline-gradient"></div>
+
+                <div class="sm2-inline-element sm2-button-element">
+                    <div class="sm2-button-bd">
+                        <a href="#play" class="sm2-inline-button play-pause">Play / pause</a>
+                    </div>
+                </div>
+
+                <div class="sm2-inline-element sm2-inline-status">
+
+                    <div class="sm2-playlist">
+                        <div class="sm2-playlist-target">
+                            <!-- playlist <ul> + <li> markup will be injected here -->
+                            <!-- if you want default / non-JS content, you can put that here. -->
+                            <noscript><p>JavaScript is required.</p></noscript>
+                        </div>
+                    </div>
+
+                    <div class="sm2-progress">
+                        <div class="sm2-row">
+                            <div class="sm2-inline-time">0:00</div>
+                            <div class="sm2-progress-bd">
+                                <div class="sm2-progress-track">
+                                    <div class="sm2-progress-bar"></div>
+                                    <div class="sm2-progress-ball"><div class="icon-overlay"></div></div>
+                                </div>
+                            </div>
+                            <div class="sm2-inline-duration">0:00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sm2-inline-element sm2-button-element sm2-volume">
+                    <div class="sm2-button-bd">
+                        <span class="sm2-inline-button sm2-volume-control volume-shade"></span>
+                        <a href="#volume" class="sm2-inline-button sm2-volume-control">volume</a>
+                    </div>
+                </div>
+
+                <div class="sm2-inline-element sm2-button-element">
+                    <div class="sm2-button-bd">
+                        <a href="#prev" title="Previous" class="sm2-inline-button previous">&lt; previous</a>
+                    </div>
+                </div>
+
+                <div class="sm2-inline-element sm2-button-element">
+                    <div class="sm2-button-bd">
+                        <a href="#next" title="Next" class="sm2-inline-button next">&gt; next</a>
+                    </div>
+                </div>
+
+                <div class="sm2-inline-element sm2-button-element">
+                    <div class="sm2-button-bd">
+                        <a href="#repeat" title="Repeat playlist" class="sm2-inline-button repeat">&infin; repeat</a>
+                    </div>
+                </div>
+
+                <!--<div class="sm2-inline-element sm2-button-element disabled">
+                    <div class="sm2-button-bd">
+                        <a href="#shuffle" title="Shuffle" class="sm2-inline-button shuffle">shuffle</a>
+                    </div>
+                </div>-->
+
+                <div class="sm2-inline-element sm2-button-element sm2-menu">
+                    <div class="sm2-button-bd">
+                        <a href="#menu" class="sm2-inline-button menu">menu</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bd sm2-playlist-drawer sm2-element">
+                <div class="sm2-inline-texture">
+                    <div class="sm2-box-shadow"></div>
+                </div>
+                <div class="sm2-playlist-wrapper">
+                    <ul class="sm2-playlist-bd" ng-controller="PlaylistController">
+                        <li ng-repeat="item in playlist">
+                            <span ng-click="del_song(item.id)" class="song_del glyphicon glyphicon-minus-sign"></span>
+                            <a class="playlist-item" href="{{ item.url }}">{{ item.artist }} - {{ item.title }}</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

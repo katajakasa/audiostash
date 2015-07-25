@@ -264,15 +264,15 @@ class Scanner(object):
         if track.album != 1:
             # If album only has a single (this) track, remove album
             if s.query(Track).filter_by(album=track.album).count() == 0:
-                s.query(Album).get(track.album).delete()
+                s.query(Album).filter_by(id=track.album).delete()
                 
         if track.artist != 1:
             # If artist only has a single (this) track, remove artist
             if s.query(Track).filter_by(artist=track.artist).count() == 0:
-                s.query(Artist).get(track.artist).delete()
+                s.query(Artist).filter_by(id=track.artist).delete()
 
         # That's that, delete the track.
-        s.query(Track).get(track.id).delete()
+        s.query(Track).filter_by(id=track.id).delete()
 
         # Save changes
         s.commit()
@@ -282,7 +282,7 @@ class Scanner(object):
         s = session_get()
         for album in s.query(Album).filter_by(cover=cover.id):
             album.cover = 1
-        s.query(Cover).get(cover.id).delete()
+        s.query(Cover).filter_by(id=cover.id).delete()
         s.commit()
             
     def handle_delete(self, path):

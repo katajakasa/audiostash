@@ -1,0 +1,20 @@
+<div class="album-container">
+    <h1>
+        <span class="album_title">{{ album.title }}</span>
+        <span class="by">by</span>
+        <span class="artist_title">{{ artist.name}}</span>
+    </h1>
+    <div class="col-sm-4 hidden-xs album_info">
+        <div ng-switch on="album.cover">
+            <div ng-switch-when="1" class="album_cover">
+                <img src="/static/img/default_album.jpg" />
+            </div>
+            <div ng-switch-default class="album_cover">
+                <img src="/cover/{{ album.cover }}" />
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-8 track_info">
+        <div ui-grid="grid_opts" ui-grid-auto-resize ng-style="{ 'height': height }" class="track_grid"></div>
+    </div>
+</div>

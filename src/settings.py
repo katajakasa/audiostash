@@ -5,7 +5,7 @@ import os
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
 # Port for the server.
-PORT = 8000
+PORT = 5961
 
 # Debug mode.
 # If true, the daemons will print on commandline instead of logfile.
@@ -49,9 +49,8 @@ NO_TRANSCODE_FORMATS = [
     'ogg'
 ]
 
-# Format to transcode to (mp3 is best, ogg may work)
-# Note: If you change this, remember to clear your database!
-# Note: Without prefix dot!
+# Format to transcode to
+# Note: Currently does not work with other formats! Do not change!
 TRANSCODE_FORMAT = 'mp3'
 
 # Logfile for the daemon. If debugmode is on, then stdout will be used for log output.

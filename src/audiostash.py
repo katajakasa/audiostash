@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
 import settings
 import mimetypes
+import calendar
+from datetime import datetime
 
 from common.stashlog import StashLog
 
 from passlib.hash import pbkdf2_sha256
-from common.tables import database_init, session_get, User, Session, Track
+from common.tables import *
 from common.utils import generate_session
 from tornado import web, ioloop, gen
 from sockjs.tornado import SockJSRouter, SockJSConnection
@@ -20,6 +21,7 @@ log = None
 
 class AudioStashSock(SockJSConnection):
     clients = set()
+    sync_tables = [Artist, Album, Directory, Playlist, PlaylistItem, Track, Setting]
 
     def __init__(self, session):
         self.authenticated = False
@@ -52,6 +54,114 @@ class AudioStashSock(SockJSConnection):
         self.clients.add(self)
         log.debug("Connection accepted")
 
+    def on_auth_msg(self, packet_msg):
+        sid = packet_msg.get('sid', '')
+
+        s = session_get()
+        user = None
+        session = None
+        try:
+            session = s.query(Session).filter_by(key=sid).one()
+            user = s.query(User).filter_by(id=session.user).one()
+        except NoResultFound:
+            pass
+
+        # Session found with token.
+        if session and user:
+            self.sid = sid
+            self.authenticated = True
+
+            log.debug("Authenticated with '{}'.".format(self.sid))
+
+            # Send login success message
+            self.send_message('auth', {
+                'uid': user.id,
+                'sid': sid,
+                'level': user.level
+            })
+            return
+        self.send_error('auth', "Invalid session", 403)
+        log.debug("Authentication failed.")
+
+    def on_login_msg(self, packet_msg):
+        username = packet_msg.get('username', '')
+        password = packet_msg.get('password', '')
+
+        s = session_get()
+        user = None
+        try:
+            user = s.query(User).filter_by(username=username).one()
+        except NoResultFound:
+            pass
+
+        # If user exists and password matches, pass onwards!
+        if user and pbkdf2_sha256.verify(password, user.password):
+            session_id = generate_session()
+
+            # Add new session
+            ses = Session(key=session_id, user=user.id)
+            s.add(ses)
+            s.commit()
+
+            # Mark connection as authenticated, and save session id
+            self.sid = session_id
+            self.authenticated = True
+
+            # Dump out log
+            log.debug("Logged in '{}'.".format(self.sid))
+
+            # TODO: Cleanup old sessions
+
+            # Send login success message
+            self.send_message('login', {
+                'uid': user.id,
+                'sid': session_id,
+                'level': user.level
+            })
+
+    def on_logout_msg(self, packet_msg):
+        # Remove session
+        s = session_get()
+        s.query(Session).filter_by(key=self.sid).delete()
+        s.commit()
+
+        # Dump out log
+        log.debug("Logged out '{}'.".format(self.sid))
+
+        # Disauthenticate & clear session ID
+        self.authenticated = False
+        self.sid = None
+
+    def on_sync_msg(self, packet_msg):
+        query = packet_msg.get('query', '')
+        if query == 'status':
+            ts = packet_msg.get('ts')
+            remote_ts = datetime.fromtimestamp(int(ts))
+            self.send_message('sync', {
+                'query': 'status',
+                'ts': calendar.timegm(datetime.now().timetuple()),
+                'status': [t.__tablename__
+                           for t in self.sync_tables
+                           if session_get().query(t).filter(t.updated > remote_ts).count() > 0]
+            })
+            return
+        if query == 'request':
+            name = packet_msg.get('table')
+            ts = packet_msg.get('ts')
+            table = None
+            for t in self.sync_tables:
+                if t.__tablename__ == name:
+                    table = t
+            self.send_message('sync', {
+                'query': 'request',
+                'table': name,
+                'data': [t.serialize() for t in session_get().query(table).filter(table.updated > ts).all()]
+            })
+            return
+
+    def on_unknown_msg(self, packet_msg):
+        log.debug("Unknown or nonexistent packet type!")
+
     def on_message(self, raw_message):
         # Load packet and parse as JSON
         try:
@@ -64,91 +174,16 @@ class AudioStashSock(SockJSConnection):
         # Handle packet by type
         packet_type = message.get('type', '')
         packet_msg = message.get('message', {})
-        if packet_type == 'auth':
-            sid = packet_msg.get('sid', '')
 
-            s = session_get()
-            user = None
-            session = None
-            try:
-                session = s.query(Session).filter_by(key=sid).one()
-                user = s.query(User).filter_by(id=session.user).one()
-            except NoResultFound:
-                pass
-
-            # Session found with token.
-            if session and user:
-                self.sid = sid
-                self.authenticated = True
-
-                log.debug("Authenticated with '{}'.".format(self.sid))
-
-                # Send login success message
-                self.send_message('auth', {
-                    'uid': user.id,
-                    'sid': sid,
-                    'level': user.level
-                })
-                return
-            self.send_error('auth', "Invalid session", 403)
-            log.debug("Authentication failed.")
-            return
-
-        elif packet_type == 'logout':
-            # Remove session
-            s = session_get()
-            s.query(Session).filter_by(key=self.sid).delete()
-            s.commit()
-
-            # Dump out log
-            log.debug("Logged out '{}'.".format(self.sid))
-
-            # Disauthenticate & clear session ID
-            self.authenticated = False
-            self.sid = None
-            return
-
-        elif packet_type == 'login':
-            username = packet_msg.get('username', '')
-            password = packet_msg.get('password', '')
-
-            s = session_get()
-            user = None
-            try:
-                user = s.query(User).filter_by(username=username).one()
-            except NoResultFound:
-                pass
-
-            # If user exists and password matches, pass onwards!
-            if user and pbkdf2_sha256.verify(password, user.password):
-                session_id = generate_session()
-
-                # Add new session
-                ses = Session(key=session_id, user=user.id)
-                s.add(ses)
-                s.commit()
-
-                # Mark connection as authenticated, and save session id
-                self.sid = session_id
-                self.authenticated = True
-
-                # Dump out log
-                log.debug("Logged in '{}'.".format(self.sid))
-
-                # TODO: Cleanup old sessions
-
-                # Send login success message
-                self.send_message('login', {
-                    'uid': user.id,
-                    'sid': session_id,
-                    'level': user.level
-                })
-                return
-
-            self.send_error('login', "Invalid username or password", 403)
-            return
-        else:
-            log.debug("other")
+        # Find and run callback
+        cbs = {
+            'auth': self.on_auth_msg,
+            'login': self.on_login_msg,
+            'logout': self.on_logout_msg,
+            'sync': self.on_sync_msg,
+            'unknown': self.on_unknown_msg
+        }
+        cbs[packet_type if packet_type in cbs else 'unknown'](packet_msg)
 
     def on_close(self):
         self.clients.remove(self)
@@ -156,9 +191,31 @@ class AudioStashSock(SockJSConnection):
         return super(AudioStashSock, self).on_close()
 
 
-class IndexHandler(web.RequestHandler):
-    def get(self):
-        self.render(os.path.join(settings.PUBLIC_PATH, "index.html"))
+class CoverHandler(web.RequestHandler):
+    def get(self, cover_id):
+        # Find the cover we want
+        try:
+            cover = session_get().query(Cover).filter_by(id=cover_id).one()
+        except NoResultFound:
+            self.set_status(404)
+            self.finish("404")
+            return
+
+        # Make sure we have a filename
+        if not cover.file:
+            self.set_status(404)
+            self.finish("404")
+            return
+
+        # Just pick content type and dump out the file.
+        self.set_header("Content-Type", mimetypes.guess_type("file://"+cover.file)[0])
+        with file(cover.file, 'rb') as f:
+            while True:
+                data = f.read(8192)
+                if not data:
+                    break
+                self.write(data)
+        self.finish()
 
 
 class TrackHandler(web.RequestHandler):
@@ -219,7 +276,7 @@ class TrackHandler(web.RequestHandler):
                 while left:
                     data = f.read(left if left < 8192 else 8192)
                     left -= len(data)
-                    if data is None or len(data) == 0:
+                    if not data:
                         break
                     self.write(data)
                     self.flush()
@@ -269,12 +326,11 @@ if __name__ == '__main__':
     router = SockJSRouter(AudioStashSock, '/sock')
 
     # Index and static handlers
-    handlers = [
-        (r'/static/(.*)', web.StaticFileHandler, {'path': os.path.join(settings.PUBLIC_PATH, "static")}),
-        (r'/partials/(.*)', web.StaticFileHandler, {'path': os.path.join(settings.PUBLIC_PATH, "partials")}),
-        (r'/track/(\d+)', TrackHandler),
-        (r'/', IndexHandler)
-    ] + router.urls
+    handlers = router.urls + [
+        (r'/track/(\d+).mp3$', TrackHandler),
+        (r'/cover/(\d+)$', CoverHandler),
+        (r'/(.*)$', web.StaticFileHandler, {'path': settings.PUBLIC_PATH, 'default_filename': 'index.html'}),
+    ]
     
     conf = {
         'debug': settings.DEBUG,

@@ -8,12 +8,24 @@ from sqlalchemy.sql import func
 
 Base = declarative_base()
 
+USERLEVELS = {
+    'none': 0,
+    'user': 1,
+    'admin': 2,
+}
+
 
 class Artist(Base):
     __tablename__ = "artist"
     id = Column(Integer, primary_key=True)
     name = Column(String(128))
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
 
 
 class Cover(Base):
@@ -31,12 +43,26 @@ class Album(Base):
     cover = Column(ForeignKey('cover.id'))
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'artist': session_get().query(Artist).filter_by(id=self.artist).one().serialize(),
+            'cover': self.cover
+        }
+
 
 class Directory(Base):
     __tablename__ = "directory"
     id = Column(Integer, primary_key=True)
     directory = Column(String(255), nullable=True)
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'directory': self.directory
+        }
 
 
 class Playlist(Base):
@@ -45,6 +71,12 @@ class Playlist(Base):
     name = Column(String(64))
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
 
 class PlaylistItem(Base):
     __tablename__ = "playlistitem"
@@ -52,6 +84,13 @@ class PlaylistItem(Base):
     track = Column(ForeignKey('track.id'))
     number = Column(Integer)
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'track': self.track,
+            'number': self.number
+        }
 
 
 class Track(Base):
@@ -71,6 +110,21 @@ class Track(Base):
     date = Column(String(16))
     comment = Column(Text)
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'album': session_get().query(Album).filter_by(id=self.album).one().serialize(),
+            'album_id': self.album,
+            'dir': self.dir,
+            'artist': session_get().query(Artist).filter_by(id=self.artist).one().serialize(),
+            'artist_id': self.artist,
+            'title': self.title,
+            'track': self.track,
+            'disc': self.disc,
+            'date': self.date,
+            'comment': self.comment
+        }
+
 
 class Setting(Base):
     __tablename__ = "setting"
@@ -79,6 +133,13 @@ class Setting(Base):
     value = Column(Text)
     updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'key': self.key,
+            'value': self.value
+        }
+
 
 class Log(Base):
     __tablename__ = "log"
@@ -86,12 +147,12 @@ class Log(Base):
     entry = Column(Text)
     updated = Column(DateTime(timezone=True), default=func.now())
 
+    def serialize(self):
+        return {
+            'id': self.id,
+            'entry': self.entry
+        }
 
-USERLEVELS = {
-    'none': 0,
-    'user': 1,
-    'admin': 2,
-}
 
 class User(Base):
     __tablename__ = "user"
@@ -110,14 +171,17 @@ class Session(Base):
 
 _session = sessionmaker()
 
+
 def database_init(dbfile):
     engine = create_engine('sqlite:///{}'.format(dbfile))
     _session.configure(bind=engine)
     Base.metadata.create_all(engine)
     database_ensure_initial()
 
+
 def session_get():
     return _session()
+
 
 def database_ensure_initial():
     s = session_get()

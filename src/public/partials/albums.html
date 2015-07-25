@@ -1,3 +1,16 @@
-<div class="container-fluid">
-    <h2>Albums</h2>
+<div class="albums-container">
+    <div ng-repeat="album in albums" class="album_block" ng-click="redirect_album(album.artist.id, album.id)">
+        <div ng-switch on="album.cover">
+            <div ng-switch-when="1" class="album_cover">
+                <img src="/static/img/default_album.jpg" />
+            </div>
+            <div ng-switch-default class="album_cover">
+                <img ng-if="album" src="/cover/{{ album.cover }}" />
+            </div>
+        </div>
+        <div class="album_text">
+            <span class="title">{{ album.title }}</span><br />
+            <span class="artist">by {{ album.artist.name }}</span>
+        </div>
+    </div>
 </div>

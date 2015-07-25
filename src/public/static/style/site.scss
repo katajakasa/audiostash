@@ -1,0 +1,121 @@
+
+.nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
+
+body {
+    margin-bottom: 50px;
+}
+
+
+
+.sm2-bar-ui {
+    font-size: 16px;
+
+    .song_del {
+        float: left;
+        margin-top: 7px;
+        margin-left: 3px;
+    }
+
+    .playlist-item {
+        margin-left: 15px;
+    }
+
+    .sm2-main-controls,
+    .sm2-playlist-drawer {
+        background-color: #5f5f5f;
+    }
+
+    .sm2-inline-texture {
+        background: transparent;
+    }
+}
+
+.album-container {
+    h1 {
+        text-align: center;
+        margin: 0px;
+        padding: 0px;
+        line-height: 20px;
+        margin-bottom: 15px;
+
+        .album_title {
+            font-size: 24px;
+        }
+        .by {
+            font-size: 18px;
+        }
+        .artist_title {
+            font-size: 24px;
+        }
+    }
+
+    .ui-grid, .ui-grid-viewport, .ui-grid-canvas {
+        height: auto !important;
+    }
+
+    .album_info {
+        img {
+            width: 100%;
+            border-radius: 6px;
+            box-shadow: 0px 0px 2px black;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    }
+
+    .track_info {
+        .track_grid {
+            width: 100%;
+        }
+
+        .track_icon {
+            margin-left: 8px;
+            margin-top: 7px;
+        }
+    }
+}
+
+.albums-container {
+    .album_cover {
+        background-color: black;
+        width: 200px;
+        height: 200px;
+        box-shadow: 0px 0px 2px black;
+
+        img {
+            max-width: 200px;
+            max-height: 200px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 6px;
+        }
+    }
+
+    .album_block {
+        display: inline-block;
+        width: 220px;
+        height: 260px;
+        padding: 10px;
+        margin: 5px;
+        background-color: #eeeeee;
+        border-radius: 4px;
+    }
+
+    .album_block:hover {
+        background-color: #cccccc;
+    }
+
+    .album_text {
+        margin-top: 6px;
+        span {
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            width: 200px;
+            float: left;
+        }
+        .title { font-size: 80%; }
+        .artist { font-size: 70%; }
+    }
+}
