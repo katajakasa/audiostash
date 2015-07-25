@@ -1,14 +1,9 @@
 'use strict';
 
-app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_EVENTS',
-  function($location, $rootScope, Session, sock, AUTH_EVENTS) {
-    function auth_event(data) {
-      sock.removeHandler('message');
-      if(data['type'] != 'message') {
-        return;
-      }
-      var msg = angular.fromJson(data['data']);
-      if(msg['type'] == "auth" && msg['error'] == 0) {
+app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_EVENTS', 'SockService',
+  function($location, $rootScope, Session, sock, AUTH_EVENTS, SockService) {
+    function auth_event(msg) {
+      if(msg['error'] == 0) {
         Session.create(
           msg['data']['sid'],
           msg['data']['uid'],
@@ -23,29 +18,23 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_
     }
 
     function authenticate() {
-      sock.setHandler('message', auth_event);
       sock.send(angular.toJson({
         'type': 'auth',
         'message': {
-          'sid': Session.sid,
+          'sid': Session.sid
         }
       }));
     }
 
-    function login_event(data) {
-      sock.removeHandler('message');
-      if(data['type'] != 'message') {
-        return;
-      }
-      var msg = angular.fromJson(data['data']);
-      if(msg['type'] == "login" && msg['error'] == 0) {
+    function login_event(msg) {
+      if(msg['error'] == 0) {
         Session.create(
           msg['data']['sid'],
           msg['data']['uid'],
           msg['data']['level']
         );
         $rootScope.$broadcast(AUTH_EVENTS.loginSuccess);
-        $location.path('/dashboard');
+        $location.path('/albums');
       } else {
         $rootScope.$broadcast(AUTH_EVENTS.loginFailed);
         console.error("Login error!");
@@ -53,12 +42,11 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_
     }
 
     function login(credentials) {
-      sock.setHandler('message', login_event);
       sock.send(angular.toJson({
         'type': 'login',
         'message': {
           'username': credentials.username,
-          'password': credentials.password,
+          'password': credentials.password
         }
       }));
     }
@@ -81,7 +69,13 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_
       return (is_authenticated() && req_level >= Session.level);
     }
 
+    function setup() {
+      SockService.add_recv_handler('auth', auth_event);
+      SockService.add_recv_handler('login', login_event);
+    }
+
     return {
+      setup: setup,
       authenticate: authenticate,
       login: login,
       logout: logout,

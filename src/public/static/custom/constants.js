@@ -10,8 +10,12 @@ app.constant('AUTH_EVENTS', {
   notAuthorized: 'auth-not-authorized'
 });
 
+app.constant('PLAYLIST_EVENTS', {
+  refresh: 'playlist-refresh'
+});
+
 app.constant('USERLEVELS', [
   'none',
   'user',
-  'admin',
+  'admin'
 ]);
