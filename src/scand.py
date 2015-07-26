@@ -403,7 +403,7 @@ def sig_handler(signum, frame):
     scanner.stop()
 
 if __name__ == '__main__':
-    log = StashLog(debug=settings.DEBUG, level=settings.LOG_LEVEL, logfile=settings.STASH_LOGFILE)
+    log = StashLog(debug=settings.DEBUG, level=settings.LOG_LEVEL, logfile=settings.SCAND_LOGFILE)
 
     # Init database and bootstrap the scanner
     database_init(settings.DBFILE)
