@@ -282,30 +282,33 @@ class TrackHandler(web.RequestHandler):
                     self.flush()
         else:
             log.debug("Transcoding {}".format(song.file))
-            pos = 0
 
             # Transcode from starting point
             at = audiotranscode.AudioTranscode()
-            for data in at.transcode_stream(song.file, settings.TRANSCODE_FORMAT):
-                bsize = len(data)
-                if pos + bsize > range_start:
-                    start = 0 if pos > range_start else range_start-pos
-                    send = bsize-start if bsize-start < left else left
-                    out = data[start:send]
-                    self.write(out)
-                    self.flush()
-                    left -= len(out)
-                    pos += len(out)
-                else:
-                    pos += bsize
+            stream = at.transcode_stream(song.file, settings.TRANSCODE_FORMAT)
 
-                # Stop if no data left
-                if left <= 0:
+            # First, seek to range_start
+            seek = 0
+            for data in stream:
+                s = len(data)
+                if seek+s >= range_start:
+                    w = range_start - seek
+                    if w > 0:
+                        self.write(data[w:])
+                        self.flush()
+                        left -= w
                     break
+                seek += s
+
+            # Just stream normally
+            for data in stream:
+                self.write(data)
+                self.flush()
+                left -= len(data)
 
         # Flush the last bytes before finishing up.
-        log.debug("Finished streaming {}".format(song.file))
         self.flush()
+        log.debug("Finished streaming {}".format(song.file))
         self.finish()
 
 
