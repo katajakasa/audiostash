@@ -1,4 +1,5 @@
 .idea
 src/audiostash.db
+src/settings.py
 *.pyc
 
