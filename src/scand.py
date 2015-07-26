@@ -10,7 +10,7 @@ from common.tables import \
     Track, Album, Directory, Artist, Cover
 from common.utils import decode_path, match_track_filename, get_or_create
 import settings
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 from sqlalchemy.orm.exc import NoResultFound
 from common import audiotranscode
 
@@ -258,7 +258,6 @@ class Scanner(object):
             self._cover_art[mdir] = prev
 
     def handle_track_delete(self, track):
-        self.log.debug(u"Deleting track {} ...".format(track.file))
         s = session_get()
         
         if track.album != 1:
@@ -278,7 +277,6 @@ class Scanner(object):
         s.commit()
 
     def handle_cover_delete(self, cover):
-        self.log.debug(u"Deleting cover {} ...".format(cover.file))
         s = session_get()
         for album in s.query(Album).filter_by(cover=cover.id):
             album.cover = 1
@@ -370,7 +368,12 @@ class Scanner(object):
         self.postprocess_deleted()
         self.postprocess_albums()
         self.postprocess_covers()
+        self.schedule_scan()
         self.log.info(u"Scan complete")
+
+    def schedule_scan(self):
+        self.log.info("Scheduling a new scan after 30 minutes.")
+        self._update_task = task.deferLater(reactor, 1800, self.scan_all)
 
     def __init__(self, log=None, cleanup=False):
         self.log = log
@@ -379,6 +382,7 @@ class Scanner(object):
         self._files = 0
         self._dirs = 0
         self._run = True
+        self._update_task = None
 
         # If doing a re-indexing
         s = session_get()
