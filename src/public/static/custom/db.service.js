@@ -39,7 +39,7 @@ app.factory('DataService', ['$indexedDB', 'sock', '$timeout', 'SockService',
                 'type': 'sync',
                 'message': {
                     'query': 'request',
-                    'ts': sync_ts,
+                    'ts': localStorage['last_sync'],
                     'table': sync_list.shift()
                 }
             }));
@@ -58,6 +58,7 @@ app.factory('DataService', ['$indexedDB', 'sock', '$timeout', 'SockService',
         function sync_request_response(msg) {
             var data = msg['data'];
             var table = msg['table'];
+
             $indexedDB.openStore(table, function(store) {
                 for(var i = 0; i < data.length; i++) {
                     store.upsert(data[i]);
@@ -82,7 +83,7 @@ app.factory('DataService', ['$indexedDB', 'sock', '$timeout', 'SockService',
 
         function reset_localstorage() {
             if(localStorage.getItem("initialized") == null) {
-                localStorage['last_sync'] = 0;
+                localStorage['last_sync'] = "2000-01-01T00:00:00Z";
                 localStorage['initialized'] = 1;
             }
         }

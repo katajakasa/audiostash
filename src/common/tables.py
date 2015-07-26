@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import func
+from common.utils import utc_now
 
 Base = declarative_base()
 
@@ -19,7 +19,7 @@ class Artist(Base):
     __tablename__ = "artist"
     id = Column(Integer, primary_key=True)
     name = Column(String(128))
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
@@ -32,7 +32,7 @@ class Cover(Base):
     __tablename__ = "cover"
     id = Column(Integer, primary_key=True)
     file = Column(String(255))
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
 
 class Album(Base):
@@ -41,7 +41,7 @@ class Album(Base):
     title = Column(String(100), nullable=True)
     artist = Column(ForeignKey('artist.id'))
     cover = Column(ForeignKey('cover.id'))
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
@@ -56,7 +56,7 @@ class Directory(Base):
     __tablename__ = "directory"
     id = Column(Integer, primary_key=True)
     directory = Column(String(255), nullable=True)
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
@@ -69,7 +69,7 @@ class Playlist(Base):
     __tablename__ = "playlist"
     id = Column(Integer, primary_key=True)
     name = Column(String(64))
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
@@ -83,7 +83,7 @@ class PlaylistItem(Base):
     id = Column(Integer, primary_key=True)
     track = Column(ForeignKey('track.id'))
     number = Column(Integer)
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
@@ -100,7 +100,7 @@ class Track(Base):
     type = Column(String(8))
     bytes_len = Column(Integer)
     bytes_tc_len = Column(Integer)
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
     album = Column(ForeignKey('album.id'))
     dir = Column(ForeignKey('directory.id'))
     artist = Column(ForeignKey('artist.id'))
@@ -131,7 +131,7 @@ class Setting(Base):
     id = Column(Integer, primary_key=True)
     key = Column(String(32))
     value = Column(Text)
-    updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
@@ -145,7 +145,7 @@ class Log(Base):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
     entry = Column(Text)
-    updated = Column(DateTime(timezone=True), default=func.now())
+    updated = Column(DateTime(timezone=True), default=utc_now())
 
     def serialize(self):
         return {
@@ -166,7 +166,7 @@ class Session(Base):
     __tablename__ = "session"
     key = Column(String(32), primary_key=True)
     user = Column(ForeignKey('user.id'))
-    start = Column(DateTime(timezone=True), default=func.now())
+    start = Column(DateTime(timezone=True), default=utc_now())
 
 
 _session = sessionmaker()

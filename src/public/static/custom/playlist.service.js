@@ -31,7 +31,6 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'PLAYLIST_EVENTS',
     }
 
     function save() {
-        console.log(playlist);
         localStorage['playlist'] = angular.toJson(playlist);
     }
 

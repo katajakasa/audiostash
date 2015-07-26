@@ -4,17 +4,37 @@ import sys
 import re
 import os
 import base64
-
-""" Attempt to decode path with correct encoding """
-def decode_path(name):
-    return name.decode(sys.getfilesystemencoding())
+import pytz
+import isodate
+import datetime
 
 track_matcher_1 = re.compile('([0-9]+)[\s|_]?-[\s|_]?(.*)[\s|_]?-[\s|_]?(.*)')
 track_matcher_2 = re.compile('([0-9]+)[\s|_][\s|_]?(.*)')
 track_matcher_3 = re.compile('(.*)[\s|_]?-[\s|_]?(.*)')
 
-""" Attempt to detect title and artist from song filename """
+
+def utc_now():
+    """ Gets UTC datetime """
+    return pytz.utc.localize(datetime.datetime.utcnow())
+
+
+def to_isodate(dt):
+    """ Converts datetime to iso8601-timestamp """
+    return isodate.datetime_isoformat(dt)
+
+
+def from_isodate(ts):
+    """ Parses timestamp to datetime """
+    return isodate.parse_datetime(ts)
+
+
+def decode_path(name):
+    """ Attempt to decode path with correct encoding """
+    return name.decode(sys.getfilesystemencoding())
+
+
 def match_track_filename(filename):
+    """ Attempt to detect title and artist from song filename """
     m = track_matcher_1.match(filename)
     if m:
         return m.group(2), m.group(3)
@@ -29,8 +49,9 @@ def match_track_filename(filename):
 
     return None, None
 
-""" Gets an instance if it exists, or creates a new one if not. """
+
 def get_or_create(session, model, **kwargs):
+    """ Gets an instance if it exists, or creates a new one if not. """
     instance = session.query(model).filter_by(**kwargs).first()
     if instance:
         return instance
@@ -40,6 +61,7 @@ def get_or_create(session, model, **kwargs):
         session.commit()
         return instance
 
-""" Generates a session ID. Secure enough. """
+
 def generate_session():
+    """ Generates a session ID. Secure enough. """
     return base64.b64encode(os.urandom(16))

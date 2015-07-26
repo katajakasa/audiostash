@@ -3,18 +3,18 @@
 import json
 import settings
 import mimetypes
-import calendar
-from datetime import datetime
 
+from common import audiotranscode
 from common.stashlog import StashLog
 
 from passlib.hash import pbkdf2_sha256
-from common.tables import *
-from common.utils import generate_session
+from common.tables import \
+    session_get, database_init, Artist, Album, Cover, Directory, Playlist, PlaylistItem, \
+    Track, Setting, Session, User
+from common.utils import generate_session, to_isodate, from_isodate, utc_now
 from tornado import web, ioloop, gen
 from sockjs.tornado import SockJSRouter, SockJSConnection
 from sqlalchemy.orm.exc import NoResultFound
-from common import audiotranscode
 
 log = None
 
@@ -135,11 +135,10 @@ class AudioStashSock(SockJSConnection):
     def on_sync_msg(self, packet_msg):
         query = packet_msg.get('query', '')
         if query == 'status':
-            ts = packet_msg.get('ts')
-            remote_ts = datetime.fromtimestamp(int(ts))
+            remote_ts = from_isodate(packet_msg.get('ts'))
             self.send_message('sync', {
                 'query': 'status',
-                'ts': calendar.timegm(datetime.now().timetuple()),
+                'ts': to_isodate(utc_now()),
                 'status': [t.__tablename__
                            for t in self.sync_tables
                            if session_get().query(t).filter(t.updated > remote_ts).count() > 0]
@@ -147,7 +146,7 @@ class AudioStashSock(SockJSConnection):
             return
         if query == 'request':
             name = packet_msg.get('table')
-            ts = packet_msg.get('ts')
+            remote_ts = from_isodate(packet_msg.get('ts'))
             table = None
             for t in self.sync_tables:
                 if t.__tablename__ == name:
@@ -155,7 +154,7 @@ class AudioStashSock(SockJSConnection):
             self.send_message('sync', {
                 'query': 'request',
                 'table': name,
-                'data': [t.serialize() for t in session_get().query(table).filter(table.updated > ts).all()]
+                'data': [t.serialize() for t in session_get().query(table).filter(table.updated > remote_ts)]
             })
             return
 
@@ -268,7 +267,6 @@ class TrackHandler(web.RequestHandler):
         # If the format is already mp3 or ogg, just stream out.
         # If format is something else, attempt to transcode.
         if song.type in settings.NO_TRANSCODE_FORMATS:
-            log.debug("Direct streaming {}".format(song.file))
             with open(song.file, 'rb') as f:
                 f.seek(range_start)
 
@@ -281,8 +279,6 @@ class TrackHandler(web.RequestHandler):
                     self.write(data)
                     self.flush()
         else:
-            log.debug("Transcoding {}".format(song.file))
-
             # Transcode from starting point
             at = audiotranscode.AudioTranscode()
             stream = at.transcode_stream(song.file, settings.TRANSCODE_FORMAT)
@@ -293,7 +289,7 @@ class TrackHandler(web.RequestHandler):
                 s = len(data)
                 if seek+s >= range_start:
                     w = range_start - seek
-                    if w > 0:
+                    if w < s:
                         self.write(data[w:])
                         self.flush()
                         left -= w
@@ -308,7 +304,6 @@ class TrackHandler(web.RequestHandler):
 
         # Flush the last bytes before finishing up.
         self.flush()
-        log.debug("Finished streaming {}".format(song.file))
         self.finish()
 
 
