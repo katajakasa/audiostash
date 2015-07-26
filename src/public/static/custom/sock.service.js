@@ -1,18 +1,17 @@
 'use strict';
 
-app.factory('SockService', ['sock',
-    function(sock){
+app.factory('SockService', ['socket',
+    function(socket){
         var recv_handlers = {};
         var open_handlers = [];
 
         function setup() {
-            sock.setHandler("open", function() {
+            socket.onOpen(function() {
                 for(var i = 0; i < open_handlers.length; i++) {
                     open_handlers[i]();
                 }
             });
-            sock.setHandler("message", function(data) {
-                var msg = angular.fromJson(data['data']);
+            socket.onMessage(function(msg) {
                 var type = msg['type'];
                 if(type in recv_handlers) {
                     for(var i = 0; i < recv_handlers[type].length; i++) {
@@ -31,10 +30,15 @@ app.factory('SockService', ['sock',
             recv_handlers[type].push(fn);
         }
 
+        function send(msg) {
+            socket.send(msg)
+        }
+
         return {
             setup: setup,
             add_open_handler: add_open_handler,
-            add_recv_handler: add_recv_handler
+            add_recv_handler: add_recv_handler,
+            send: send
         }
     }
 ]);

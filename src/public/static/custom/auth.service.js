@@ -1,7 +1,9 @@
 'use strict';
 
-app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_EVENTS', 'SockService',
-  function($location, $rootScope, Session, sock, AUTH_EVENTS, SockService) {
+app.factory('AuthService', ['$location', '$rootScope', 'Session', 'AUTH_EVENTS', 'SockService',
+  function($location, $rootScope, Session, AUTH_EVENTS, SockService) {
+    var last_error = "";
+
     function auth_event(msg) {
       if(msg['error'] == 0) {
         Session.create(
@@ -18,12 +20,12 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_
     }
 
     function authenticate() {
-      sock.send(angular.toJson({
+      SockService.send({
         'type': 'auth',
         'message': {
           'sid': Session.sid
         }
-      }));
+      });
     }
 
     function login_event(msg) {
@@ -34,29 +36,28 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_
           msg['data']['level']
         );
         $rootScope.$broadcast(AUTH_EVENTS.loginSuccess);
-        $location.path('/albums');
       } else {
+        last_error = msg['data']['message'];
         $rootScope.$broadcast(AUTH_EVENTS.loginFailed);
-        console.error("Login error!");
       }
     }
 
     function login(credentials) {
-      sock.send(angular.toJson({
+      SockService.send({
         'type': 'login',
         'message': {
           'username': credentials.username,
           'password': credentials.password
         }
-      }));
+      });
     }
 
     function logout() {
       $rootScope.$broadcast(AUTH_EVENTS.logoutBegin);
-      sock.send(angular.toJson({
+      SockService.send({
         'type': 'logout',
         'message': {}
-      }));
+      });
       Session.destroy();
       $rootScope.$broadcast(AUTH_EVENTS.logoutSuccess);
     }
@@ -74,6 +75,10 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_
       SockService.add_recv_handler('login', login_event);
     }
 
+    function get_last_error() {
+      return last_error;
+    }
+
     return {
       setup: setup,
       authenticate: authenticate,
@@ -81,6 +86,7 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'sock', 'AUTH_
       logout: logout,
       is_authorized: is_authorized,
       is_authenticated: is_authenticated,
+      get_last_error: get_last_error
     };
   }
 ]);

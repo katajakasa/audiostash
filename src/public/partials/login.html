@@ -1,6 +1,7 @@
 <div class="col-sm-6 col-lg-4">
     <h2>Login</h2>
     <form name="loginForm" role="form" ng-submit="login(credentials)" novalidate>
+        <div ng-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
         <div class="form-group">
             <label for="username">Username:</label>
             <input type="text" class="form-control" id="username" ng-model="credentials.username">

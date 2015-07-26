@@ -1,7 +1,7 @@
 'use strict';
 
-app.factory('DataService', ['$indexedDB', 'sock', '$timeout', 'SockService',
-    function($indexedDB, sock, $timeout, SockService){
+app.factory('DataService', ['$indexedDB', '$timeout', 'SockService',
+    function($indexedDB, $timeout, SockService){
         var svc = null;
         var sync_ts = -1;
         var sync_list = [];
@@ -12,17 +12,22 @@ app.factory('DataService', ['$indexedDB', 'sock', '$timeout', 'SockService',
         // sync_event() -> receiver response from server
         // sync_status_response() -> called by sync_event, gets status response and updates syncable tables list
         // sync_data_fetch(( -> If there are syncable tables, previous calls this. Sends request for data.
-        // sync_request_response()
+        // sync_request_response() -> Receives database table dump. When done, call sync_data_fetch() if more tables to
+        //                            sync. If not, just call sync_check_finished().
+        // sync_check_finished() -> Finish up the sync and schedule a new one with a timer.
 
         function sync_check_start() {
             console.log("sync_check_start");
-            sock.send(angular.toJson({
+
+            // Just dump out a request containing the timestamp of the last attempt
+            // We want to receive everything new in the database after that.
+            SockService.send({
                 'type': 'sync',
                 'message': {
                     'query': 'status',
                     'ts': localStorage['last_sync']
                 }
-            }));
+            });
         }
 
         function sync_data_fetch() {
@@ -35,14 +40,14 @@ app.factory('DataService', ['$indexedDB', 'sock', '$timeout', 'SockService',
             }
 
             // Request for data for the first table in the array
-            sock.send(angular.toJson({
+            SockService.send({
                 'type': 'sync',
                 'message': {
                     'query': 'request',
                     'ts': localStorage['last_sync'],
                     'table': sync_list.shift()
                 }
-            }));
+            });
         }
 
         function sync_status_response(data) {

@@ -188,15 +188,25 @@ app.controller('NavController', ['$scope', '$location', 'AuthService',
   }
 ]);
 
-app.controller('LoginController', ['$scope', '$rootScope', 'AUTH_EVENTS', 'AuthService',
-  function($scope, $rootScope, AUTH_EVENTS, AuthService) {
+app.controller('LoginController', ['$scope', '$location', '$rootScope', 'AUTH_EVENTS', 'AuthService',
+  function($scope, $location, $rootScope, AUTH_EVENTS, AuthService) {
+    $scope.error = "";
+
     $scope.credentials = {
       username: '',
       password: ''
     };
+
     $scope.login = function(credentials) {
       AuthService.login(credentials);
     };
+
+    $scope.$on(AUTH_EVENTS.loginSuccess, function(event, args) {
+      $location.path('/albums');
+    });
+    $scope.$on(AUTH_EVENTS.loginFailed, function(event, args) {
+      $scope.error = AuthService.get_last_error();
+    });
   }
 ]);
 

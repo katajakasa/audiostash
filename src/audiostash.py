@@ -26,6 +26,7 @@ class AudioStashSock(SockJSConnection):
     def __init__(self, session):
         self.authenticated = False
         self.sid = None
+        self.ip = None
         super(AudioStashSock, self).__init__(session)
 
     def send_error(self, mtype, message, code):
@@ -37,7 +38,7 @@ class AudioStashSock(SockJSConnection):
                 'message': message
             }
         })
-        log.debug("Sending error {}".format(msg))
+        log.debug("Sending error {}".format(msg), ip=self.ip)
         return self.send(msg)
 
     def send_message(self, mtype, message):
@@ -46,13 +47,14 @@ class AudioStashSock(SockJSConnection):
             'error': 0,
             'data': message,
         })
-        log.debug("Sending message {}".format(msg))
+        log.debug("Sending message {}".format(msg), ip=self.ip)
         return self.send(msg)
 
     def on_open(self, info):
         self.authenticated = False
+        self.ip = info.ip
         self.clients.add(self)
-        log.debug("Connection accepted")
+        log.debug("Connection accepted", ip=self.ip)
 
     def on_auth_msg(self, packet_msg):
         sid = packet_msg.get('sid', '')
@@ -71,7 +73,7 @@ class AudioStashSock(SockJSConnection):
             self.sid = sid
             self.authenticated = True
 
-            log.debug("Authenticated with '{}'.".format(self.sid))
+            log.debug("Authenticated with '{}'.".format(self.sid), ip=self.ip)
 
             # Send login success message
             self.send_message('auth', {
@@ -81,18 +83,18 @@ class AudioStashSock(SockJSConnection):
             })
             return
         self.send_error('auth', "Invalid session", 403)
-        log.debug("Authentication failed.")
+        log.debug("Authentication failed.", ip=self.ip)
 
     def on_login_msg(self, packet_msg):
         username = packet_msg.get('username', '')
         password = packet_msg.get('password', '')
 
         s = session_get()
-        user = None
         try:
             user = s.query(User).filter_by(username=username).one()
         except NoResultFound:
-            pass
+            self.send_error('login', 'Incorrect username or password', 401)
+            return
 
         # If user exists and password matches, pass onwards!
         if user and pbkdf2_sha256.verify(password, user.password):
@@ -108,7 +110,7 @@ class AudioStashSock(SockJSConnection):
             self.authenticated = True
 
             # Dump out log
-            log.debug("Logged in '{}'.".format(self.sid))
+            log.debug("Logged in '{}'.".format(self.sid), ip=self.ip)
 
             # TODO: Cleanup old sessions
 
@@ -118,6 +120,9 @@ class AudioStashSock(SockJSConnection):
                 'sid': session_id,
                 'level': user.level
             })
+        else:
+            self.send_error('login', 'Incorrect username or password', 401)
+            return
 
     def on_logout_msg(self, packet_msg):
         # Remove session
@@ -126,7 +131,7 @@ class AudioStashSock(SockJSConnection):
         s.commit()
 
         # Dump out log
-        log.debug("Logged out '{}'.".format(self.sid))
+        log.debug("Logged out '{}'.".format(self.sid), ip=self.ip)
 
         # Disauthenticate & clear session ID
         self.authenticated = False
@@ -135,7 +140,14 @@ class AudioStashSock(SockJSConnection):
     def on_sync_msg(self, packet_msg):
         query = packet_msg.get('query', '')
         if query == 'status':
-            remote_ts = from_isodate(packet_msg.get('ts'))
+            # Attempt to parse timestamp received from the client.
+            try:
+                remote_ts = from_isodate(packet_msg.get('ts'))
+            except:
+                self.send_error('sync', "Invalid timestamp", 400)
+                return
+
+            # Send over a list of all tables that have new entries
             self.send_message('sync', {
                 'query': 'status',
                 'ts': to_isodate(utc_now()),
@@ -146,11 +158,24 @@ class AudioStashSock(SockJSConnection):
             return
         if query == 'request':
             name = packet_msg.get('table')
-            remote_ts = from_isodate(packet_msg.get('ts'))
+
+            # Attempt to parse timestamp received from the client.
+            try:
+                remote_ts = from_isodate(packet_msg.get('ts'))
+            except:
+                self.send_error('sync', "Invalid timestamp", 400)
+                return
+
+            # Find table model that matches the name
             table = None
             for t in self.sync_tables:
                 if t.__tablename__ == name:
                     table = t
+            if not table:
+                self.send_error('sync', "Invalid table name", 400)
+                return
+
+            # Send message containing all new data in the table
             self.send_message('sync', {
                 'query': 'request',
                 'table': name,
@@ -159,20 +184,25 @@ class AudioStashSock(SockJSConnection):
             return
 
     def on_unknown_msg(self, packet_msg):
-        log.debug("Unknown or nonexistent packet type!")
+        log.debug("Unknown or nonexistent packet type!", ip=self.ip)
 
     def on_message(self, raw_message):
         # Load packet and parse as JSON
         try:
             message = json.loads(raw_message)
-            log.debug("Message: {}.".format(raw_message))
         except ValueError:
-            self.send_error('none', "Invalid JSON", 500)
+            self.send_error('none', "Invalid JSON", 400)
             return
 
         # Handle packet by type
         packet_type = message.get('type', '')
         packet_msg = message.get('message', {})
+
+        # Censor login packets for obvious reasons ...
+        if type != 'login':
+            log.debug("Message: {}.".format(raw_message), ip=self.ip)
+        else:
+            log.debug("Message: **login**", ip=self.ip)
 
         # Find and run callback
         cbs = {
@@ -186,7 +216,7 @@ class AudioStashSock(SockJSConnection):
 
     def on_close(self):
         self.clients.remove(self)
-        log.debug("Connection closed")
+        log.debug("Connection closed", ip=self.ip)
         return super(AudioStashSock, self).on_close()
 
 

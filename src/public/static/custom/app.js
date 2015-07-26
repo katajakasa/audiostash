@@ -5,7 +5,7 @@ var app = angular.module(
   [
     'ngRoute',
     'indexedDB',
-    'bd.sockjs',
+    'ng.sockjs',
     'ui.bootstrap',
     'ui.grid'
   ]
@@ -35,12 +35,12 @@ app.config(function($indexedDBProvider) {
     });
 });
 
-app.factory('sock', function(socketFactory) {
-  return socketFactory({
-    url: '/sock'
-  });
-});
+// Sockjs
+app.value('ngSockRetry', 5000);
+app.value('ngSockUrl', '/sock');
 
+// URLs
+// (custom) requireLogin: True for logincheck
 app.config(['$routeProvider',
   function($routeProvider) {
     $routeProvider.
