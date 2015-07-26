@@ -73,7 +73,7 @@ class AudioStashSock(SockJSConnection):
             self.sid = sid
             self.authenticated = True
 
-            log.debug("Authenticated with '{}'.".format(self.sid), ip=self.ip)
+            log.info("Authenticated with '{}'.".format(self.sid), ip=self.ip)
 
             # Send login success message
             self.send_message('auth', {
@@ -83,7 +83,7 @@ class AudioStashSock(SockJSConnection):
             })
             return
         self.send_error('auth', "Invalid session", 403)
-        log.debug("Authentication failed.", ip=self.ip)
+        log.info("Authentication failed.", ip=self.ip)
 
     def on_login_msg(self, packet_msg):
         username = packet_msg.get('username', '')
@@ -110,7 +110,7 @@ class AudioStashSock(SockJSConnection):
             self.authenticated = True
 
             # Dump out log
-            log.debug("Logged in '{}'.".format(self.sid), ip=self.ip)
+            log.info("Logged in '{}'.".format(self.sid), ip=self.ip)
 
             # TODO: Cleanup old sessions
 
@@ -131,7 +131,7 @@ class AudioStashSock(SockJSConnection):
         s.commit()
 
         # Dump out log
-        log.debug("Logged out '{}'.".format(self.sid), ip=self.ip)
+        log.info("Logged out '{}'.".format(self.sid), ip=self.ip)
 
         # Disauthenticate & clear session ID
         self.authenticated = False
