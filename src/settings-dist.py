@@ -15,6 +15,10 @@ DEBUG = False
 # Where your music can be found
 MUSIC_DIRECTORY = "/mnt/music"
 
+# Image and transcoded file cache directory
+# Make sure this is not inside or the same as MUSIC_DIRECTORY
+COVER_CACHE_DIRECTORY = "/mnt/tmp"
+
 # Cover filename hints (looks for eg. cover_*.<ext> in album path.
 COVER_HINTS = [
     'cover',

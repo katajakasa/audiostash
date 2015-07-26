@@ -4,6 +4,8 @@ import os
 import mutagen
 import argparse
 import signal
+
+from common import audiotranscode
 from common.stashlog import StashLog
 from common.tables import \
     database_init, database_ensure_initial, session_get, \
@@ -12,7 +14,7 @@ from common.utils import decode_path, match_track_filename, get_or_create
 import settings
 from twisted.internet import reactor, task
 from sqlalchemy.orm.exc import NoResultFound
-from common import audiotranscode
+from PIL import Image
 
 _ver = "v0.1"
 _name = "Audiostash Indexer Daemon " + _ver
@@ -99,7 +101,7 @@ class Scanner(object):
             track.track = self._get_tag_int(m, ('TRCK', 'Track', 'TRACK', 'TRACK', 'TRACKNUMBER'))
             
             # Find date
-            track.date = self._get_tag_int(m, ('TYER', 'TDAT', "DATE", "YEAR", "Date", "Year"))
+            track.date = self._get_tag(m, ('TYER', 'TDAT', "DATE", "YEAR", "Date", "Year"))
             if track.date is None:
                 track.date = u""
             
@@ -229,7 +231,16 @@ class Scanner(object):
                     cover = get_or_create(s, Cover, file=cover_art[0])
                     album.cover = cover.id
                     found += 1
-                    break
+
+                    # Make thumbnails
+                    try:
+                        img = Image.open(cover_art[0])
+                        size = 200, 200
+                        out_file = os.path.join(settings.COVER_CACHE_DIRECTORY, '{}.jpg'.format(cover.id))
+                        img.thumbnail(size, Image.ANTIALIAS)
+                        img.save(out_file, "JPEG")
+                    except IOError:
+                        log.error("Unable to create a thumbnail for {}".format(cover.id))
 
         s.commit()
         self._cover_art = {}  # Clear cover art cache
@@ -406,8 +417,18 @@ def sig_handler(signum, frame):
     scanner.log.info(u"Caught signal {}, quitting ...".format(signum))
     scanner.stop()
 
+
+def ensure_dir(f):
+    d = os.path.dirname(f)
+    if not os.path.exists(d):
+        os.makedirs(d)
+
+
 if __name__ == '__main__':
     log = StashLog(debug=settings.DEBUG, level=settings.LOG_LEVEL, logfile=settings.SCAND_LOGFILE)
+
+    # Make sure the cover cache directory exists
+    ensure_dir(settings.COVER_CACHE_DIRECTORY)
 
     # Init database and bootstrap the scanner
     database_init(settings.DBFILE)

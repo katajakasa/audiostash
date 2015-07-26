@@ -1,8 +1,9 @@
-tornado==4.1
+tornado==4.2.1
 sockjs-tornado==1.0.1
 sqlalchemy==1.0.4
 twisted==14.0.2
 mutagen==1.28
 isodate==0.5.1
-passlib
+pillow==2.6.0
+passlib==1.6.2
 pytz

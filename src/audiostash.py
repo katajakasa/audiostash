@@ -2,6 +2,7 @@
 
 import json
 import settings
+import os
 import mimetypes
 
 from common import audiotranscode
@@ -221,7 +222,7 @@ class AudioStashSock(SockJSConnection):
 
 
 class CoverHandler(web.RequestHandler):
-    def get(self, session_id, cover_id):
+    def get(self, session_id, size_flag, cover_id):
         # Make sure session is valid
         try:
             session_get().query(Session).filter_by(key=session_id).one()
@@ -230,23 +231,34 @@ class CoverHandler(web.RequestHandler):
             self.finish("401")
             return
 
-        # Find the cover we want
-        try:
-            cover = session_get().query(Cover).filter_by(id=cover_id).one()
-        except NoResultFound:
-            self.set_status(404)
-            self.finish("404")
-            return
+        if size_flag == "0":
+            cover_file = os.path.join(settings.COVER_CACHE_DIRECTORY, "{}.jpg".format(cover_id))
+        else:
+            # Find the cover we want
+            try:
+                cover = session_get().query(Cover).filter_by(id=cover_id).one()
+            except NoResultFound:
+                self.set_status(404)
+                self.finish("404")
+                return
 
-        # Make sure we have a filename
-        if not cover.file:
+            # Make sure we have a filename
+            if not cover.file:
+                self.set_status(404)
+                self.finish("404")
+                return
+
+            cover_file = cover.file
+
+        # Make sure the file exists on disk
+        if not os.path.isfile(cover_file):
             self.set_status(404)
             self.finish("404")
             return
 
         # Just pick content type and dump out the file.
-        self.set_header("Content-Type", mimetypes.guess_type("file://"+cover.file)[0])
-        with file(cover.file, 'rb') as f:
+        self.set_header("Content-Type", mimetypes.guess_type("file://"+cover_file)[0])
+        with file(cover_file, 'rb') as f:
             while True:
                 data = f.read(8192)
                 if not data:
@@ -372,7 +384,7 @@ if __name__ == '__main__':
     # Index and static handlers
     handlers = router.urls + [
         (r'/track/([a-z0-9]+)/(\d+).mp3$', TrackHandler),
-        (r'/cover/([a-z0-9]+)/(\d+)$', CoverHandler),
+        (r'/cover/([a-z0-9]+)/(\d)/(\d+)$', CoverHandler),
         (r'/(.*)$', web.StaticFileHandler, {'path': settings.PUBLIC_PATH, 'default_filename': 'index.html'}),
     ]
     
