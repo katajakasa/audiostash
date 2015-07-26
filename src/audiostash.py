@@ -14,7 +14,7 @@ from common.utils import generate_session
 from tornado import web, ioloop, gen
 from sockjs.tornado import SockJSRouter, SockJSConnection
 from sqlalchemy.orm.exc import NoResultFound
-import audiotranscode
+from common import audiotranscode
 
 log = None
 

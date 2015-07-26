@@ -7,12 +7,12 @@ import signal
 from common.stashlog import StashLog
 from common.tables import \
     database_init, database_ensure_initial, session_get, \
-    Track, Album, Directory, Artist, Cover, Log
+    Track, Album, Directory, Artist, Cover
 from common.utils import decode_path, match_track_filename, get_or_create
 import settings
 from twisted.internet import reactor
 from sqlalchemy.orm.exc import NoResultFound
-import audiotranscode
+from common import audiotranscode
 
 _ver = "v0.1"
 _name = "Audiostash Indexer Daemon " + _ver
