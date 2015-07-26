@@ -50,6 +50,8 @@ app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService',
     SockService.setup();
     DataService.setup();
     PlaylistService.setup();
+
+    $rootScope.session_id = AuthService.session_id;
   }
 ]);
 

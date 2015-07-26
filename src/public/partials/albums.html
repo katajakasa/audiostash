@@ -5,7 +5,7 @@
                 <img src="/static/img/default_album.jpg" />
             </div>
             <div ng-switch-default class="album_cover">
-                <img ng-if="album" src="/cover/{{ album.cover }}" />
+                <img ng-if="album" src="/cover/{{ session_id() }}/{{ album.cover }}" />
             </div>
         </div>
         <div class="album_text">

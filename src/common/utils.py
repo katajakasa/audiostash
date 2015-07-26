@@ -3,10 +3,10 @@
 import sys
 import re
 import os
-import base64
 import pytz
 import isodate
 import datetime
+import binascii
 
 track_matcher_1 = re.compile('([0-9]+)[\s|_]?-[\s|_]?(.*)[\s|_]?-[\s|_]?(.*)')
 track_matcher_2 = re.compile('([0-9]+)[\s|_][\s|_]?(.*)')
@@ -64,4 +64,4 @@ def get_or_create(session, model, **kwargs):
 
 def generate_session():
     """ Generates a session ID. Secure enough. """
-    return base64.b64encode(os.urandom(16))
+    return binascii.hexlify(os.urandom(16))

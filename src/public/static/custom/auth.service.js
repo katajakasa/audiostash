@@ -12,7 +12,7 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'AUTH_EVENTS',
           msg['data']['level']
         );
         $rootScope.$broadcast(AUTH_EVENTS.loginSuccess);
-        console.log("Login success!");
+        console.log("Authentication success!");
       } else {
         $rootScope.$broadcast(AUTH_EVENTS.sessionTimeout);
         console.error("Session timeout!");
@@ -66,6 +66,10 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'AUTH_EVENTS',
       return !!Session.uid;
     }
 
+    function session_id() {
+      return Session.sid;
+    }
+
     function is_authorized(req_level) {
       return (is_authenticated() && req_level >= Session.level);
     }
@@ -86,7 +90,8 @@ app.factory('AuthService', ['$location', '$rootScope', 'Session', 'AUTH_EVENTS',
       logout: logout,
       is_authorized: is_authorized,
       is_authenticated: is_authenticated,
-      get_last_error: get_last_error
+      get_last_error: get_last_error,
+      session_id: session_id
     };
   }
 ]);

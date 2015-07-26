@@ -133,7 +133,7 @@
                     <ul class="sm2-playlist-bd" ng-controller="PlaylistController">
                         <li ng-repeat="item in playlist">
                             <span ng-click="del_song(item.id)" class="song_del glyphicon glyphicon-minus-sign"></span>
-                            <a class="playlist-item" href="{{ item.url }}">{{ item.artist }} - {{ item.title }}</a>
+                            <a class="playlist-item" href="/track/{{ session_id() }}/{{ item.id }}.mp3">{{ item.artist }} - {{ item.title }}</a>
                         </li>
                     </ul>
                 </div>

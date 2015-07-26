@@ -221,7 +221,15 @@ class AudioStashSock(SockJSConnection):
 
 
 class CoverHandler(web.RequestHandler):
-    def get(self, cover_id):
+    def get(self, session_id, cover_id):
+        # Make sure session is valid
+        try:
+            session_get().query(Session).filter_by(key=session_id).one()
+        except NoResultFound:
+            self.set_status(401)
+            self.finish("401")
+            return
+
         # Find the cover we want
         try:
             cover = session_get().query(Cover).filter_by(id=cover_id).one()
@@ -250,7 +258,15 @@ class CoverHandler(web.RequestHandler):
 class TrackHandler(web.RequestHandler):
     @web.asynchronous
     @gen.coroutine
-    def get(self, song_id):
+    def get(self, session_id, song_id):
+        # Make sure session is valid
+        try:
+            session_get().query(Session).filter_by(key=session_id).one()
+        except NoResultFound:
+            self.set_status(401)
+            self.finish("401")
+            return
+
         # Find the song we want
         try:
             song = session_get().query(Track).filter_by(id=song_id).one()
@@ -355,8 +371,8 @@ if __name__ == '__main__':
 
     # Index and static handlers
     handlers = router.urls + [
-        (r'/track/(\d+).mp3$', TrackHandler),
-        (r'/cover/(\d+)$', CoverHandler),
+        (r'/track/([a-z0-9]+)/(\d+).mp3$', TrackHandler),
+        (r'/cover/([a-z0-9]+)/(\d+)$', CoverHandler),
         (r'/(.*)$', web.StaticFileHandler, {'path': settings.PUBLIC_PATH, 'default_filename': 'index.html'}),
     ]
     

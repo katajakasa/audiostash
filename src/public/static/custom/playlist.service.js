@@ -10,11 +10,10 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'PLAYLIST_EVENTS',
           playlist.push({
             artist: track.artist.name,
             title: track.title,
-            id: track.id,
-            url: '/track/'+track.id+'.mp3'
+            id: track.id
           });
-          $rootScope.$broadcast(PLAYLIST_EVENTS.refresh);
           save();
+          $rootScope.$broadcast(PLAYLIST_EVENTS.refresh);
         });
       });
     }
@@ -23,8 +22,8 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'PLAYLIST_EVENTS',
         for(var i = 0; i < playlist.length; i++) {
             if(playlist[i].id == track_id) {
                 playlist.splice(i, 1);
-                $rootScope.$broadcast(PLAYLIST_EVENTS.refresh);
                 save();
+                $rootScope.$broadcast(PLAYLIST_EVENTS.refresh);
                 return;
             }
         }
