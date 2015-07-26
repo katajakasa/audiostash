@@ -107,6 +107,51 @@ app.controller('PlayerController', ['$scope', 'AuthService', 'PlaylistService',
   }
 ]);
 
+app.controller('TrackController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
+  function($scope, $indexedDB, $location, $routeParams, PlaylistService) {
+    $scope.$scope = $scope;
+    $scope.artist = null;
+    $scope.album = null;
+    $scope.grid_opts = {
+      enableSorting: true,
+      enableHorizontalScrollbar : 0,
+      enableVerticalScrollbar: 0,
+      enableGridMenu: false,
+      rowHeight: 30,
+      columnDefs: [
+        {
+          name: "add",
+          displayName: "",
+          width: 30,
+          enableColumnMenu: false,
+          cellTemplate: '<div><span ng-click="grid.appScope.add_song(row.entity)" class="song_add track_icon glyphicon glyphicon-plus-sign"></span></div>'
+        },
+        { name:'Title', field: 'title'},
+        { name:'Artist', field: 'artist.name'},
+        { name:'Album', field: 'album.title'},
+        { name:'T#', field: 'track', width: 50, enableColumnMenu: false },
+        { name:'D#', field: 'disc', width: 50, enableColumnMenu: false }
+      ]
+    };
+
+    $scope.add_song = function(track) {
+      PlaylistService.add(track.id);
+    };
+
+    function refresh() {
+      $indexedDB.openStore('track', function(store) {
+        store.getAll().then(function(tracks) {
+          $scope.grid_opts.minRowsToShow = tracks.length;
+          $scope.grid_opts.virtualizationThreshold = tracks.length;
+          $scope.grid_opts.data = tracks;
+        });
+      });
+    }
+
+    refresh();
+  }
+]);
+
 app.controller('AlbumController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
   function($scope, $indexedDB, $location, $routeParams, PlaylistService) {
     $scope.$scope = $scope;
