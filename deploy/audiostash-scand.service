@@ -1,0 +1,8 @@
+[Unit]
+Description=AudioStash scanner daemon
+
+[Service]
+ExecStart=/srv/virtualenvs/audiostash/bin/python /srv/www/audiostash/src/scand.py
+
+[Install]
+WantedBy=multi-user.target

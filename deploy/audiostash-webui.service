@@ -1,0 +1,8 @@
+[Unit]
+Description=AudioStash Web UI daemon
+
+[Service]
+ExecStart=/srv/virtualenvs/audiostash/bin/python /srv/www/audiostash/src/audiostash.py
+
+[Install]
+WantedBy=multi-user.target
