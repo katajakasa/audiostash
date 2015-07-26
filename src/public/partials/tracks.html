@@ -1,3 +1,5 @@
-<div class="container-fluid">
-    <h2>Tracks</h2>
+<div class="container-fluid tracks-container">
+    <div class="track_info" ng-if="grid_opts.data">
+        <div ui-grid="grid_opts" ui-grid-auto-resize ng-style="{ 'height': height }" class="track_grid"></div>
+    </div>
 </div>

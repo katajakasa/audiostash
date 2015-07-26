@@ -64,6 +64,7 @@ app.config(['$routeProvider',
       }).
       when('/tracks', {
         templateUrl: '/partials/tracks.html',
+        controller: 'TrackController',
         requireLogin: true
       }).
       when('/audiobooks', {

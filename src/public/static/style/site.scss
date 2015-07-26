@@ -28,6 +28,27 @@ body {
     }
 }
 
+.tracks-container {
+    .ui-grid, .ui-grid-viewport, .ui-grid-canvas {
+        height: auto !important;
+    }
+
+    .track_info {
+        .track_grid {
+            width: 100%;
+        }
+
+        .track_icon {
+            margin-left: 7px;
+            margin-top: 7px;
+        }
+
+        .track_icon:hover {
+            color: #aaaaaa;
+        }
+    }
+}
+
 .album-container {
     h1 {
         text-align: center;
