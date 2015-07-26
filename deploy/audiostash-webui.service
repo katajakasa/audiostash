@@ -2,7 +2,9 @@
 Description=AudioStash Web UI daemon
 
 [Service]
-ExecStart=/srv/virtualenvs/audiostash/bin/python /srv/www/audiostash/src/audiostash.py
+ExecStart=/var/virtualenvs/audiostash/bin/python /var/www/audiostash/src/audiostash.py
+User=www-data
+Group=www-data
 
 [Install]
 WantedBy=multi-user.target
