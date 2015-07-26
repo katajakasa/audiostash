@@ -1,7 +1,7 @@
 'use strict';
 
-app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService', 'Session', 'AUTH_EVENTS',
-  function($rootScope, $location, AuthService, DataService, SockService, Session, AUTH_EVENTS) {
+app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService', 'PlaylistService', 'Session', 'AUTH_EVENTS',
+  function($rootScope, $location, AuthService, DataService, SockService, PlaylistService, Session, AUTH_EVENTS) {
 
     // Make sure we are logged in the next page requires that
     $rootScope.$on('$routeChangeStart', function(event, next, current) {
@@ -49,6 +49,7 @@ app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService',
     AuthService.setup();
     SockService.setup();
     DataService.setup();
+    PlaylistService.setup();
   }
 ]);
 
@@ -78,13 +79,21 @@ app.controller('PlaylistController', ['$scope', '$window', 'PlaylistService', 'P
     $scope.$on(PLAYLIST_EVENTS.refresh, function(event, args) {
       $scope.playlist = PlaylistService.get_list();
       $window.sm2BarPlayers[0].playlistController.refresh();
+      console.log("Updated.");
     });
+
     $scope.del_song = function(track_id) {
       PlaylistService.del(track_id);
+      if(!PlaylistService.has_data()) {
+        $window.sm2BarPlayers[0].actions.stop();
+      }
     };
+
     $scope.is_visible = function() {
       return AuthService.is_authenticated();
-    }
+    };
+
+    $scope.playlist = PlaylistService.get_list();
   }
 ]);
 
