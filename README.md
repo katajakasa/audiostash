@@ -10,8 +10,6 @@ Requirements
 
 You also need to have ffmpeg binary installed.
 
-Also install python-audiostranscode. It's available at https://github.com/devsnd/python-audiotranscode .
-
 Installation
 ------------
 
@@ -25,7 +23,12 @@ Installation
 
 License
 -------
-License is MIT. See LICENSE for more details.
+License is GPLv3. See LICENSE for more details.
+
+Other
+-----
+
+Project also contains a copy of python-audiotranscode by Tom Wallroth (https://github.com/devsnd/python-audiotranscode).
 
 Contact
 -------
