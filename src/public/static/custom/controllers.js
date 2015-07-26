@@ -108,16 +108,16 @@ app.controller('AlbumController', ['$scope', '$indexedDB', '$location', '$routeP
       enableGridMenu: false,
       rowHeight: 30,
       columnDefs: [
-        { name:'Title', field: 'title', enableColumnMenu: false },
-        { name:'T#', field: 'track', width: 50, enableColumnMenu: false },
-        { name:'D#', field: 'disc', width: 50, enableColumnMenu: false },
         {
           name: "add",
           displayName: "",
           width: 30,
           enableColumnMenu: false,
           cellTemplate: '<div><span ng-click="grid.appScope.add_song(row.entity)" class="song_add track_icon glyphicon glyphicon-plus-sign"></span></div>'
-        }
+        },
+        { name:'Title', field: 'title', enableColumnMenu: false },
+        { name:'T#', field: 'track', width: 50, enableColumnMenu: false },
+        { name:'D#', field: 'disc', width: 50, enableColumnMenu: false }
       ]
     };
 
