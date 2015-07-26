@@ -31,7 +31,7 @@ class StashLog(object):
                 f.flush()
 
     def debug(self, msg, ip=None):
-        if self.level <= 1:
+        if self.level < 1:
             self.write('D', msg, ip=ip)
 
     def info(self, msg, ip=None):
