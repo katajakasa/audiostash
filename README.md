@@ -3,6 +3,10 @@ AudioStash
 
 Personal web music/video player with transcoding.
 
+Audiostash can be deployed on a server, pointed to your music collection on local directory, and then used to stream your
+music collection over the web to wherever you are (with your hopefully HTML5/mp3 compatible browser :) Also supports
+transcoding from other formats to mp3 on-the-fly.
+
 ![Audiostash albums view](https://raw.githubusercontent.com/katajakasa/audiostash/master/doc/albums.jpg "Album view with some testdata")
 
 Dependencies
