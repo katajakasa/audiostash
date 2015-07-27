@@ -3,6 +3,8 @@ AudioStash
 
 Personal web music/video player with transcoding.
 
+![Audiostash albums view](https://raw.githubusercontent.com/katajakasa/audiostash/master/doc/albums.jpg "Album view with some testdata")
+
 Dependencies
 ------------
 
