@@ -129,6 +129,8 @@ app.controller('TrackController', ['$scope', '$indexedDB', '$location', '$routeP
         { name:'Title', field: 'title'},
         { name:'Artist', field: 'artist.name'},
         { name:'Album', field: 'album.title'},
+        { name:'Date', field: 'date', width: 70, enableColumnMenu: false },
+        { name:'Genre', field: 'genre', width: 100, enableColumnMenu: false },
         { name:'T#', field: 'track', width: 50, enableColumnMenu: false },
         { name:'D#', field: 'disc', width: 50, enableColumnMenu: false }
       ]
@@ -172,6 +174,8 @@ app.controller('AlbumController', ['$scope', '$indexedDB', '$location', '$routeP
           cellTemplate: '<div><span ng-click="grid.appScope.add_song(row.entity)" class="song_add track_icon glyphicon glyphicon-plus-sign"></span></div>'
         },
         { name:'Title', field: 'title', enableColumnMenu: false },
+        { name:'Date', field: 'date', width: 70, enableColumnMenu: false },
+        { name:'Genre', field: 'genre', width: 100, enableColumnMenu: false },
         { name:'T#', field: 'track', width: 50, enableColumnMenu: false },
         { name:'D#', field: 'disc', width: 50, enableColumnMenu: false }
       ]
