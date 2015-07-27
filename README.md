@@ -8,7 +8,7 @@ Personal web music/video player with transcoding.
 Dependencies
 ------------
 
-```pip install --upgrade -r deploy/requirements.txt```
+```pip install --upgrade -r deploy/requirements.pip```
 
 You also need to have ffmpeg binary installed.
 
