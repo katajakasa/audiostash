@@ -23,7 +23,8 @@ Installation
 6. Connect with browser to your server to the port you defined in settings.py.
 7. Enjoy!
 
-For proxying with nxing, there is a skeleton config file in deploy/audiostasn.nginx
+For proxying with nginx, there is a skeleton config file in 
+deploy/audiostasn.nginx
 For autostarting with systemd, there are service files in deploy/audiostash-scand.service and deploy/audiostash-webui.service.
 
 License
