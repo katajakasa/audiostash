@@ -139,6 +139,9 @@ class AudioStashSock(SockJSConnection):
         self.sid = None
 
     def on_sync_msg(self, packet_msg):
+        if not self.authenticated:
+            return
+
         query = packet_msg.get('query', '')
         if query == 'status':
             # Attempt to parse timestamp received from the client.
