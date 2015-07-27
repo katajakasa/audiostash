@@ -3,7 +3,7 @@ AudioStash
 
 Personal web music/video player with transcoding.
 
-Requirements
+Dependencies
 ------------
 
 ```pip install --upgrade -r deploy/requirements.txt```
@@ -15,11 +15,14 @@ Installation
 
 1. Copy sec/settings-dist.py to settings.py.
 2. Change settings to suit yourself.
-3. Install dependencies (see above).
+3. Set up a virtualenv and install dependencies (see above).
 4. ```python scand.py``` to scan your files to database. After scan is done, close with CTRL+C.
 5. ```python audiostash.py``` to run the server. Feel free to proxy with nginx or others.
 6. Connect with browser to your server to the port you defined in settings.py.
 7. Enjoy!
+
+For proxying with nxing, there is a skeleton config file in deploy/audiostasn.nginx
+For autostarting with systemd, there are service files in deploy/audiostash-scand.service and deploy/audiostash-webui.service.
 
 License
 -------
