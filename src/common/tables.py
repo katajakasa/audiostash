@@ -108,6 +108,7 @@ class Track(Base):
     track = Column(Integer)
     disc = Column(Integer)
     date = Column(String(16))
+    genre = Column(String(32))
     comment = Column(Text)
 
     def serialize(self):
@@ -122,6 +123,7 @@ class Track(Base):
             'track': self.track,
             'disc': self.disc,
             'date': self.date,
+            'genre': self.genre,
             'comment': self.comment
         }
 

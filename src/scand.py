@@ -4,6 +4,7 @@ import os
 import mutagen
 import argparse
 import signal
+import sys
 
 from common import audiotranscode
 from common.stashlog import StashLog
@@ -82,26 +83,41 @@ class Scanner(object):
 
         if m:
             # Find artist
-            track_artist = self._get_tag(m, ('TPE1', u'©ART', 'Author', 'Artist', 'ARTIST',
-                                             'TRACK ARTIST', 'TRACKARTIST', 'TrackArtist', 
-                                             'Track Artist'))
+            track_artist = self._get_tag(m, ('TPE1', u'©ART', 'Author', 'Artist', 'ARTIST', 'TXXX:ARTIST'
+                                             'TRACK ARTIST', 'TRACKARTIST', 'TrackArtist', 'Track Artist',
+                                             'artist'))
 
             # Find album artist
-            album_artist = self._get_tag(m, ('TPE2', u'aART', 'TXXX:ALBUM ARTIST', 'ALBUM ARTIST', 'ALBUMARTIST',
-                                             'AlbumArtist', 'Album Artist'))
+            album_artist = self._get_tag(m, ('TPE2', u'aART', 'TXXX:ALBUM ARTIST', 'TXXX:ALBUMARTIST', 'ALBUM ARTIST',
+                                             'ALBUMARTIST', 'AlbumArtist', 'Album Artist'))
 
             # Find album title
-            album_title = self._get_tag(m, (u'©alb', 'TALB', 'ALBUM', 'album'))
+            album_title = self._get_tag(m, (u'©alb', 'TALB', 'ALBUM', 'album', 'TXXX:ALBUM'))
             
             # Find title
-            track_title = self._get_tag(m, (u'©nam', 'TIT2', 'Title', 'TITLE', 'TRACK TITLE',
+            track_title = self._get_tag(m, (u'©nam', 'TXXX:TITLE', 'TIT2', 'Title', 'TITLE', 'TRACK TITLE',
                                             'TRACKTITLE', 'TrackTitle', 'Track Title'))
 
             # Find track number
-            track.track = self._get_tag_int(m, ('TRCK', 'Track', 'TRACK', 'TRACK', 'TRACKNUMBER'))
-            
+            track_number = self._get_tag(m, ('TRCK', 'TXXX:TRACK', 'Track', 'trkn', 'TRACK', 'tracknumber', 'TRACKNUMBER'))
+            if '/' in track_number:
+                track.track = int(track_number.split('/')[0])
+            elif track_number:
+                track.track = int(track_number)
+
+            # Find disc number
+            track_disc = self._get_tag(m, ('TXXX:DISCNUMBER', 'discnumber', 'DISCNUMBER', 'TPOS'))
+            if '/' in track_disc:
+                track.disc = int(track_disc.split('/')[0])
+            elif track_disc:
+                track.disc = int(track_disc)
+
+            # Find Genre/Content type
+            track.genre = self._get_tag(m, ('TCON', u'@gen', 'gnre', 'Genre', 'genre', 'GENRE', 'TXXX:GENRE'))
+
             # Find date
-            track.date = self._get_tag(m, ('TYER', 'TDAT', "DATE", "YEAR", "Date", "Year"))
+            track.date = self._get_tag(m, ('TYER', 'TDAT', 'TDRC', 'TDRL', u'@day', 'date', "DATE", "YEAR", "Date",
+                                           "Year", 'TXXX:YEAR'))
             if track.date is None:
                 track.date = u""
             
