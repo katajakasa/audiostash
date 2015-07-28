@@ -51,7 +51,7 @@ class Scanner(object):
 
     # TODO: Better tag lookup
     # TODO: Use subsessions for track components (artist, etc)
-    def handle_audio(self, path, ext):
+    def handle_audio(self, path, ext, is_audiobook):
         s = session_get()
 
         # Return here if track already exists for this path
@@ -158,7 +158,7 @@ class Scanner(object):
                     album = s.query(Album).filter_by(title=album_title, artist=a_artist.id, deleted=False).one()
                     track.album = album.id
                 except NoResultFound:
-                    album = Album(title=album_title, artist=a_artist.id, cover=1)
+                    album = Album(title=album_title, artist=a_artist.id, cover=1, is_audiobook=is_audiobook)
                     s.add(album)
                     s.commit()
                     track.album = album.id
@@ -342,19 +342,19 @@ class Scanner(object):
             self.handle_track_delete(track)
             return
 
-    def handle_file(self, path):
+    def handle_file(self, path, is_audiobook):
         ext = os.path.splitext(path)[1]
         
         if os.path.isfile(path):
             # If file exists, scan it
             if ext in settings.DAEMON_SCAN_FILES:
-                self.handle_audio(path, ext)
+                self.handle_audio(path, ext, is_audiobook)
             if ext in settings.COVER_EXTENSIONS:
                 self.handle_cover(path, ext)
         else:
             self.handle_delete(path)
 
-    def traverse_dir(self, directory):
+    def traverse_dir(self, directory, is_audiobook):
         for dir_name, subdir_list, file_list in os.walk(directory):
             if not self._run:
                 return
@@ -369,18 +369,19 @@ class Scanner(object):
                 self._files += 1
                 if self._files % 500 == 0:
                     self.log.debug("{} files handled.".format(self._files))
-                self.handle_file(full_path)
+                self.handle_file(full_path, is_audiobook)
 
             # Handle subdirs
             for mdir in subdir_list:
-                self.traverse_dir(mdir)
+                self.traverse_dir(mdir, is_audiobook)
 
     def process_files(self):
         self.log.info(u"Scanning directory " + settings.MUSIC_DIRECTORY)
         self._files = 0
         self._dirs = 0
         self._cover_art = {}
-        self.traverse_dir(settings.MUSIC_DIRECTORY)
+        self.traverse_dir(settings.MUSIC_DIRECTORY, False)
+        self.traverse_dir(settings.AUDIOBOOK_DIRECTORY, True)
         self.log.info(u"Found {} files in {} directories.".format(self._files, self._dirs))
 
     def clean_db(self):

@@ -52,6 +52,7 @@ class Album(Base, SyncMixin):
     title = Column(String(100), nullable=True)
     artist = Column(ForeignKey('artist.id'))
     cover = Column(ForeignKey('cover.id'))
+    is_audiobook = Column(Boolean, default=False)
 
     def serialize(self):
         return {

@@ -13,7 +13,12 @@ PORT = 8000
 DEBUG = False
 
 # Where your music can be found
+# On windows, please use slashes instead of backslashes (eg. C:/music/)
 MUSIC_DIRECTORY = "/mnt/music"
+
+# Where your audiobooks can be found (None if doesn't exist)
+# On windows, please use slashes instead of backslashes (eg. C:/music/)
+AUDIOBOOK_DIRECTORY = None
 
 # Image and transcoded file cache directory
 # Make sure this is not inside or the same as MUSIC_DIRECTORY
