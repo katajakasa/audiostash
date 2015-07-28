@@ -15,6 +15,10 @@
         </div>
     </div>
     <div class="col-sm-8 track_info">
+        <div class="btn-group album-playlist-buttons" role="group">
+            <button type="button" ng-click="queue(album.id)"   class="btn btn-default"><span class="icon glyphicon glyphicon-plus-sign"></span> Queue</button>
+            <button type="button" ng-click="replace(album.id)" class="btn btn-default"><span class="icon glyphicon glyphicon-asterisk"></span> Replace playlist</button>
+        </div>
         <div ui-grid="grid_opts" ui-grid-auto-resize ng-style="{ 'height': height }" class="track_grid"></div>
     </div>
 </div>
