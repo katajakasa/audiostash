@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Text
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -15,92 +15,102 @@ USERLEVELS = {
 }
 
 
-class Artist(Base):
+class SyncMixin(object):
+    deleted = Column(Boolean, default=False)
+    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
+
+
+class Artist(Base, SyncMixin):
     __tablename__ = "artist"
     id = Column(Integer, primary_key=True)
     name = Column(String(128))
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
             'id': self.id,
+            'deleted': self.deleted,
             'name': self.name
         }
 
 
-class Cover(Base):
+class Cover(Base, SyncMixin):
     __tablename__ = "cover"
     id = Column(Integer, primary_key=True)
     file = Column(String(255))
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'deleted': self.deleted,
+            'file': self.file
+        }
 
 
-class Album(Base):
+class Album(Base, SyncMixin):
     __tablename__ = "album"
     id = Column(Integer, primary_key=True)
     title = Column(String(100), nullable=True)
     artist = Column(ForeignKey('artist.id'))
     cover = Column(ForeignKey('cover.id'))
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
             'id': self.id,
+            'deleted': self.deleted,
             'title': self.title,
-            'artist': session_get().query(Artist).filter_by(id=self.artist).one().serialize(),
+            'artist': session_get().query(Artist).filter_by(id=self.artist, deleted=False).one().serialize(),
             'cover': self.cover
         }
 
 
-class Directory(Base):
+class Directory(Base, SyncMixin):
     __tablename__ = "directory"
     id = Column(Integer, primary_key=True)
     directory = Column(String(255), nullable=True)
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
             'id': self.id,
+            'deleted': self.deleted,
             'directory': self.directory
         }
 
 
-class Playlist(Base):
+class Playlist(Base, SyncMixin):
     __tablename__ = "playlist"
     id = Column(Integer, primary_key=True)
     name = Column(String(64))
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
             'id': self.id,
+            'deleted': self.deleted,
             'name': self.name
         }
 
 
-class PlaylistItem(Base):
+class PlaylistItem(Base, SyncMixin):
     __tablename__ = "playlistitem"
     id = Column(Integer, primary_key=True)
     track = Column(ForeignKey('track.id'))
     number = Column(Integer)
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
             'id': self.id,
+            'deleted': self.deleted,
             'track': self.track,
             'number': self.number
         }
 
 
-class Track(Base):
+class Track(Base, SyncMixin):
     __tablename__ = "track"
     id = Column(Integer, primary_key=True)
     file = Column(String(255))
     type = Column(String(8))
     bytes_len = Column(Integer)
     bytes_tc_len = Column(Integer)
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
     album = Column(ForeignKey('album.id'))
     dir = Column(ForeignKey('directory.id'))
     artist = Column(ForeignKey('artist.id'))
@@ -114,10 +124,11 @@ class Track(Base):
     def serialize(self):
         return {
             'id': self.id,
-            'album': session_get().query(Album).filter_by(id=self.album).one().serialize(),
+            'deleted': self.deleted,
+            'album': session_get().query(Album).filter_by(id=self.album, deleted=False).one().serialize(),
             'album_id': self.album,
             'dir': self.dir,
-            'artist': session_get().query(Artist).filter_by(id=self.artist).one().serialize(),
+            'artist': session_get().query(Artist).filter_by(id=self.artist, deleted=False).one().serialize(),
             'artist_id': self.artist,
             'title': self.title,
             'track': self.track,
@@ -128,30 +139,30 @@ class Track(Base):
         }
 
 
-class Setting(Base):
+class Setting(Base, SyncMixin):
     __tablename__ = "setting"
     id = Column(Integer, primary_key=True)
     key = Column(String(32))
     value = Column(Text)
-    updated = Column(DateTime(timezone=True), default=utc_now(), onupdate=utc_now())
 
     def serialize(self):
         return {
             'id': self.id,
+            'deleted': self.deleted,
             'key': self.key,
             'value': self.value
         }
 
 
-class Log(Base):
+class Log(Base, SyncMixin):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
     entry = Column(Text)
-    updated = Column(DateTime(timezone=True), default=utc_now())
 
     def serialize(self):
         return {
             'id': self.id,
+            'deleted': self.deleted,
             'entry': self.entry
         }
 

@@ -55,8 +55,8 @@ app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService',
   }
 ]);
 
-app.controller('AlbumsController', ['$scope', '$indexedDB', '$location',
-  function($scope, $indexedDB, $location) {
+app.controller('AlbumsController', ['$scope', '$rootScope', '$indexedDB', '$location', 'SYNC_EVENTS',
+  function($scope, $rootScope, $indexedDB, $location, SYNC_EVENTS) {
     $scope.albums = [];
 
     function refresh() {
@@ -70,6 +70,11 @@ app.controller('AlbumsController', ['$scope', '$indexedDB', '$location',
     $scope.redirect_album = function(artist_id, album_id) {
       $location.path('/album/'+artist_id+'/'+album_id)
     };
+
+    // Automatically refresh on new data
+    $rootScope.$on(SYNC_EVENTS.newData, function(event, args) {
+      refresh();
+    });
 
     refresh();
   }

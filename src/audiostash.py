@@ -22,7 +22,6 @@ log = None
 
 class AudioStashSock(SockJSConnection):
     clients = set()
-    sync_tables = [Artist, Album, Directory, Playlist, PlaylistItem, Track, Setting]
 
     def __init__(self, session):
         self.authenticated = False
@@ -143,23 +142,6 @@ class AudioStashSock(SockJSConnection):
             return
 
         query = packet_msg.get('query', '')
-        if query == 'status':
-            # Attempt to parse timestamp received from the client.
-            try:
-                remote_ts = from_isodate(packet_msg.get('ts'))
-            except:
-                self.send_error('sync', "Invalid timestamp", 400)
-                return
-
-            # Send over a list of all tables that have new entries
-            self.send_message('sync', {
-                'query': 'status',
-                'ts': to_isodate(utc_now()),
-                'status': [t.__tablename__
-                           for t in self.sync_tables
-                           if session_get().query(t).filter(t.updated > remote_ts).count() > 0]
-            })
-            return
         if query == 'request':
             name = packet_msg.get('table')
 
@@ -171,11 +153,13 @@ class AudioStashSock(SockJSConnection):
                 return
 
             # Find table model that matches the name
-            table = None
-            for t in self.sync_tables:
-                if t.__tablename__ == name:
-                    table = t
-            if not table:
+            try:
+                table = {
+                    'artist': Artist,
+                    'album': Album,
+                    'track': Track
+                }[name]
+            except KeyError:
                 self.send_error('sync', "Invalid table name", 400)
                 return
 
@@ -183,6 +167,7 @@ class AudioStashSock(SockJSConnection):
             self.send_message('sync', {
                 'query': 'request',
                 'table': name,
+                'ts': to_isodate(utc_now()),
                 'data': [t.serialize() for t in session_get().query(table).filter(table.updated > remote_ts)]
             })
             return

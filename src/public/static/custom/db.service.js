@@ -1,94 +1,80 @@
 'use strict';
 
-app.factory('DataService', ['$indexedDB', '$timeout', 'SockService',
-    function($indexedDB, $timeout, SockService){
+app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService', 'SYNC_EVENTS',
+    function($indexedDB, $rootScope, $timeout, SockService, SYNC_EVENTS){
         var svc = null;
-        var sync_ts = -1;
         var sync_list = [];
-
-        // Hot data request happens
-        //
-        // sync_check_start() -> Send table status request to server
-        // sync_event() -> receiver response from server
-        // sync_status_response() -> called by sync_event, gets status response and updates syncable tables list
-        // sync_data_fetch(( -> If there are syncable tables, previous calls this. Sends request for data.
-        // sync_request_response() -> Receives database table dump. When done, call sync_data_fetch() if more tables to
-        //                            sync. If not, just call sync_check_finished().
-        // sync_check_finished() -> Finish up the sync and schedule a new one with a timer.
+        var sync_tables = [
+            'artist',
+            'album',
+            'track'
+        ];
 
         function sync_check_start() {
             console.log("sync_check_start");
-
-            // Just dump out a request containing the timestamp of the last attempt
-            // We want to receive everything new in the database after that.
-            SockService.send({
-                'type': 'sync',
-                'message': {
-                    'query': 'status',
-                    'ts': localStorage['last_sync']
-                }
-            });
+            sync_list = sync_tables.slice();
+            console.log("Sync starting.");
+            $rootScope.$broadcast(SYNC_EVENTS.started);
+            sync_data_fetch();
         }
 
         function sync_data_fetch() {
-            console.log("sync_data_fetch");
-
             // If there is nothing more to sync, stop here.
             if(sync_list.length == 0) {
-                sync_check_finished();
+                schedule_next_sync();
+                console.log("Sync finished.");
+                $rootScope.$broadcast(SYNC_EVENTS.stopped);
                 return;
             }
 
             // Request for data for the first table in the array
+            var table_name = sync_list.shift();
+            console.log("sync_data_fetch for '"+table_name+"'... Begin");
             SockService.send({
                 'type': 'sync',
                 'message': {
                     'query': 'request',
-                    'ts': localStorage['last_sync'],
-                    'table': sync_list.shift()
+                    'ts': localStorage[table_name],
+                    'table': table_name
                 }
             });
-        }
-
-        function sync_status_response(data) {
-            sync_list = data['status'];
-            sync_ts = data['ts'];
-            if(sync_list.length == 0) {
-                sync_check_finished();
-            } else {
-                sync_data_fetch();
-            }
         }
 
         function sync_request_response(msg) {
             var data = msg['data'];
             var table = msg['table'];
+            localStorage[table] = msg['ts'];
 
             $indexedDB.openStore(table, function(store) {
                 for(var i = 0; i < data.length; i++) {
-                    store.upsert(data[i]);
+                    if(data[i]['deleted']) {
+                        store.delete(data[i]['id']);
+                    } else {
+                        store.upsert(data[i]);
+                    }
                 }
+                $rootScope.$broadcast(SYNC_EVENTS.newData);
             });
             sync_data_fetch();
         }
 
         function sync_event(msg) {
-            var data = msg['data'];
-            if(data['query'] == 'status') {
-                sync_status_response(data);
-            } else if(data['query'] == 'request') {
-                sync_request_response(data);
+            if(msg['error'] == 1) {
+                console.log("Error while syncing: '"+msg['data']['message']+"'. Scheduling new sync.");
+                schedule_next_sync();
+            } else {
+                var data = msg['data'];
+                if(data['query'] == 'request') {
+                    sync_request_response(data);
+                }
             }
-        }
-
-        function sync_check_finished() {
-            localStorage['last_sync'] = sync_ts;
-            schedule_next_sync();
         }
 
         function reset_localstorage() {
             if(localStorage.getItem("initialized") == null) {
-                localStorage['last_sync'] = "2000-01-01T00:00:00Z";
+                for(var i = 0; i < sync_tables.length; i++) {
+                    localStorage[sync_tables[i]] = "2000-01-01T00:00:00Z";
+                }
                 localStorage['initialized'] = 1;
             }
         }

@@ -4,14 +4,13 @@ import os
 import mutagen
 import argparse
 import signal
-import sys
 
 from common import audiotranscode
 from common.stashlog import StashLog
 from common.tables import \
     database_init, database_ensure_initial, session_get, \
     Track, Album, Directory, Artist, Cover
-from common.utils import decode_path, match_track_filename, get_or_create
+from common.utils import decode_path, match_track_filename, get_or_create, utc_now
 import settings
 from twisted.internet import reactor, task
 from sqlalchemy.orm.exc import NoResultFound
@@ -66,8 +65,7 @@ class Scanner(object):
             self.log.warning(u"Could not read header for {}".format(path))
 
         # Create a new entry for track
-        track = Track(file=path, album=1, artist=1)
-        track.type = ext[1:]
+        track = Track(file=path, album=1, artist=1, type=ext[1:])
 
         # Check if we need to find track transcoded length
         # If not, just set it to file length.
@@ -133,10 +131,10 @@ class Scanner(object):
             
             # If there is a track artist, add it to its own model
             if track_artist:
-                artist = get_or_create(s, Artist, name=track_artist)
+                artist = get_or_create(s, Artist, name=track_artist, deleted=False)
                 track.artist = artist.id
             elif album_artist:
-                artist = get_or_create(s, Artist, name=album_artist)
+                artist = get_or_create(s, Artist, name=album_artist, deleted=False)
                 track.artist = artist.id
 
             # If there is no track title or artist, try to parse the filename
@@ -151,13 +149,13 @@ class Scanner(object):
             # Looks for album with given information
             if album_title:
                 if album_artist:
-                    a_artist = get_or_create(s, Artist, name=album_artist)
+                    a_artist = get_or_create(s, Artist, name=album_artist, deleted=False)
                 else:
                     a_artist = s.query(Artist).get(1)
                 
                 # Set album
                 try:
-                    album = s.query(Album).filter_by(title=album_title, artist=a_artist.id).one()
+                    album = s.query(Album).filter_by(title=album_title, artist=a_artist.id, deleted=False).one()
                     track.album = album.id
                 except NoResultFound:
                     album = Album(title=album_title, artist=a_artist.id, cover=1)
@@ -167,7 +165,7 @@ class Scanner(object):
 
         # Set dir
         bpath = os.path.dirname(path)
-        mdir = get_or_create(s, Directory, directory=bpath)
+        mdir = get_or_create(s, Directory, directory=bpath, deleted=False)
         track.dir = mdir.id
                  
         # Save everything
@@ -178,11 +176,11 @@ class Scanner(object):
         s = session_get()
 
         self.log.debug(u"Removing deleted tracks from database ...")
-        for track in s.query(Track):
+        for track in s.query(Track).filter_by(deleted=False):
             if not os.path.isfile(track.file):
                 self.handle_track_delete(track)
         self.log.debug(u"Removing deleted covers from database ...")
-        for cover in s.query(Cover):
+        for cover in s.query(Cover).filter_by(deleted=False):
             if cover.id == 1:
                 continue
             if not os.path.isfile(cover.file):
@@ -192,7 +190,7 @@ class Scanner(object):
         self.log.debug(u"Postprocessing albums ...")
         s = session_get()
         found = 0
-        for album in s.query(Album):
+        for album in s.query(Album).filter_by(deleted=False):
             # Stop if quite is requested
             if not self._run:
                 s.rollback()
@@ -225,9 +223,9 @@ class Scanner(object):
             
     def postprocess_covers(self):
         self.log.debug(u"Postprocessing covers ...")
-        s = session_get()
         found = 0
-        for album in s.query(Album):
+        s = session_get()
+        for album in s.query(Album).filter_by(deleted=False):
             # Stop if quit is requested
             if not self._run:
                 s.rollback()
@@ -244,8 +242,7 @@ class Scanner(object):
                 mdir = s.query(Directory).get(track.dir)
                 cover_art = self._cover_art.get(mdir.directory, None)
                 if cover_art:
-                    cover = get_or_create(s, Cover, file=cover_art[0])
-                    album.cover = cover.id
+                    cover = get_or_create(s, Cover, file=cover_art[0], deleted=False)
                     found += 1
 
                     # Make thumbnails
@@ -256,8 +253,16 @@ class Scanner(object):
                         img.thumbnail(size, Image.ANTIALIAS)
                         img.save(out_file, "JPEG")
                     except IOError:
-                        log.error("Unable to create a thumbnail for {}".format(cover.id))
+                        self.log.error("Unable to create a thumbnail for {}".format(cover.id))
 
+                    # Set new cover id for album, and update tracks and the album timestamp for sync
+                    s.query(Track).filter_by(album=album.id).update({'updated': utc_now()})
+                    s.query(Album).filter_by(id=album.id).update({'updated': utc_now(), 'cover': cover.id})
+
+                    # Cover lookup done for this album, continue with next
+                    break
+
+        # That's that, commit changes for this album
         s.commit()
         self._cover_art = {}  # Clear cover art cache
         self.log.debug(u"Found and attached {} new covers.".format(found,))
@@ -289,25 +294,25 @@ class Scanner(object):
         
         if track.album != 1:
             # If album only has a single (this) track, remove album
-            if s.query(Track).filter_by(album=track.album).count() == 0:
-                s.query(Album).filter_by(id=track.album).delete()
+            if s.query(Track).filter_by(album=track.album, deleted=False).count() == 0:
+                s.query(Album).filter_by(id=track.album, deleted=False).update({'deleted': True})
                 
         if track.artist != 1:
             # If artist only has a single (this) track, remove artist
-            if s.query(Track).filter_by(artist=track.artist).count() == 0:
-                s.query(Artist).filter_by(id=track.artist).delete()
+            if s.query(Track).filter_by(artist=track.artist, deleted=False).count() == 0:
+                s.query(Artist).filter_by(id=track.artist, deleted=False).update({'deleted': True})
 
         # That's that, delete the track.
-        s.query(Track).filter_by(id=track.id).delete()
+        s.query(Track).filter_by(id=track.id, deleted=False).update({'deleted': True})
 
         # Save changes
         s.commit()
 
     def handle_cover_delete(self, cover):
         s = session_get()
-        for album in s.query(Album).filter_by(cover=cover.id):
+        for album in s.query(Album).filter_by(cover=cover.id, deleted=False):
             album.cover = 1
-        s.query(Cover).filter_by(id=cover.id).delete()
+        s.query(Cover).filter_by(id=cover.id, deleted=False).update({'deleted': True})
         s.commit()
             
     def handle_delete(self, path):
@@ -319,10 +324,10 @@ class Scanner(object):
         # If neither, stop here.
         s = session_get()
         try:
-            track = s.query(Track).filter_by(file=path).one()
+            track = s.query(Track).filter_by(file=path, deleted=False).one()
         except NoResultFound:
             try:
-                cover = s.query(Cover).filter_by(file=path).one()
+                cover = s.query(Cover).filter_by(file=path, deleted=False).one()
             except NoResultFound:
                 return
 
@@ -412,8 +417,7 @@ class Scanner(object):
         self._update_task = None
 
         # If doing a re-indexing
-        s = session_get()
-        if cleanup or s.query(Track).count() == 0:
+        if cleanup or session_get().query(Track).count() == 0:
             self.clean_db()
 
     def run(self):
@@ -441,14 +445,14 @@ def ensure_dir(f):
 
 
 if __name__ == '__main__':
-    log = StashLog(debug=settings.DEBUG, level=settings.LOG_LEVEL, logfile=settings.SCAND_LOGFILE)
+    mlog = StashLog(debug=settings.DEBUG, level=settings.LOG_LEVEL, logfile=settings.SCAND_LOGFILE)
 
     # Make sure the cover cache directory exists
     ensure_dir(settings.COVER_CACHE_DIRECTORY)
 
     # Init database and bootstrap the scanner
     database_init(settings.DBFILE)
-    scanner = Scanner(log=log, cleanup=is_initial)
+    scanner = Scanner(log=mlog, cleanup=is_initial)
 
     # There should be okay on windows ...
     signal.signal(signal.SIGTERM, sig_handler)
