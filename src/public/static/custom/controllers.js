@@ -61,7 +61,32 @@ app.controller('AlbumsController', ['$scope', '$rootScope', '$indexedDB', '$loca
 
         function refresh() {
             $indexedDB.openStore('album', function (store) {
-                store.getAll().then(function (albums) {
+                store.eachWhere(store.query().$index('is_audiobook').$eq(0)).then(function (albums) {
+                    $scope.albums = albums;
+                });
+            });
+        }
+
+        $scope.redirect_album = function (artist_id, album_id) {
+            $location.path('/album/' + artist_id + '/' + album_id)
+        };
+
+        // Automatically refresh on new data
+        $rootScope.$on(SYNC_EVENTS.newData, function (event, args) {
+            refresh();
+        });
+
+        refresh();
+    }
+]);
+
+app.controller('AudiobooksController', ['$scope', '$rootScope', '$indexedDB', '$location', 'SYNC_EVENTS',
+    function ($scope, $rootScope, $indexedDB, $location, SYNC_EVENTS) {
+        $scope.albums = [];
+
+        function refresh() {
+            $indexedDB.openStore('album', function (store) {
+                store.eachWhere(store.query().$index('is_audiobook').$eq(1)).then(function (albums) {
                     $scope.albums = albums;
                 });
             });
@@ -236,6 +261,7 @@ app.controller('NavController', ['$scope', '$location', 'AuthService',
     function ($scope, $location, AuthService) {
         $scope.sites = [
             {url: '/albums', name: 'Albums', requireLogin: true},
+            {url: '/audiobooks', name: 'Audiobooks', requireLogin: true},
             {url: '/tracks', name: 'Tracks', requireLogin: true},
             {url: '/login', name: 'Login', requireLogin: false},
             {url: '/logout', name: 'Logout', requireLogin: true}

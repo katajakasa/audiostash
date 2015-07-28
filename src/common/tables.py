@@ -59,6 +59,7 @@ class Album(Base, SyncMixin):
             'id': self.id,
             'deleted': self.deleted,
             'title': self.title,
+            'is_audiobook': 1 if self.is_audiobook else 0,
             'artist': session_get().query(Artist).filter_by(id=self.artist, deleted=False).one().serialize(),
             'cover': self.cover
         }

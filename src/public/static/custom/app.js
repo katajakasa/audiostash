@@ -23,7 +23,8 @@ app.config(function ($indexedDBProvider) {
             var track_store = db.createObjectStore("track", {keyPath: "id"});
             var config_store = db.createObjectStore("config", {keyPath: "id"});
 
-            album_store.createIndex("artist", "artist", {unique: false});
+            album_store.createIndex("artist", "artist.id", {unique: false});
+            album_store.createIndex("is_audiobook", "is_audiobook", {unique: false});
             playlisttrack_store.createIndex("playlist", "playlist", {unique: false});
             playlisttrack_store.createIndex("track", "track", {unique: false});
             track_store.createIndex("album_id", "album_id", {unique: false});
@@ -68,7 +69,8 @@ app.config(['$routeProvider',
                 requireLogin: true
             }).
             when('/audiobooks', {
-                templateUrl: '/partials/audiobooks.html',
+                templateUrl: '/partials/albums.html',
+                controller: 'AudiobooksController',
                 requireLogin: true
             }).
             when('/playlists', {
