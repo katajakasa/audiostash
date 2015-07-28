@@ -1,20 +1,20 @@
 'use strict';
 
 app.factory('SockService', ['socket',
-    function(socket){
+    function (socket) {
         var recv_handlers = {};
         var open_handlers = [];
 
         function setup() {
-            socket.onOpen(function() {
-                for(var i = 0; i < open_handlers.length; i++) {
+            socket.onOpen(function () {
+                for (var i = 0; i < open_handlers.length; i++) {
                     open_handlers[i]();
                 }
             });
-            socket.onMessage(function(msg) {
+            socket.onMessage(function (msg) {
                 var type = msg['type'];
-                if(type in recv_handlers) {
-                    for(var i = 0; i < recv_handlers[type].length; i++) {
+                if (type in recv_handlers) {
+                    for (var i = 0; i < recv_handlers[type].length; i++) {
                         recv_handlers[type][i](msg);
                     }
                 }
