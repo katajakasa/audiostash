@@ -182,7 +182,7 @@ class Scanner(object):
             s.commit()
             self.log.debug("Transcoded ID {}, result size was {}.".format(track.id, maxlen))
 
-    def postprocess_deleted(self):
+    def preprocess_deleted(self):
         s = session_get()
 
         self.log.debug(u"Removing deleted tracks from database ...")
@@ -314,15 +314,15 @@ class Scanner(object):
         if track.album != 1:
             # If album only has a single (this) track, remove album
             if s.query(Track).filter_by(album=track.album, deleted=False).count() == 0:
-                s.query(Album).filter_by(id=track.album, deleted=False).update({'deleted': True})
+                s.query(Album).filter_by(id=track.album, deleted=False).update({'deleted': True, 'updated': utc_now()})
                 
         if track.artist != 1:
             # If artist only has a single (this) track, remove artist
             if s.query(Track).filter_by(artist=track.artist, deleted=False).count() == 0:
-                s.query(Artist).filter_by(id=track.artist, deleted=False).update({'deleted': True})
+                s.query(Artist).filter_by(id=track.artist, deleted=False).update({'deleted': True, 'updated': utc_now()})
 
         # That's that, delete the track.
-        s.query(Track).filter_by(id=track.id, deleted=False).update({'deleted': True})
+        s.query(Track).filter_by(id=track.id, deleted=False).update({'deleted': True, 'updated': utc_now()})
 
         # Save changes
         s.commit()
@@ -331,7 +331,7 @@ class Scanner(object):
         s = session_get()
         for album in s.query(Album).filter_by(cover=cover.id, deleted=False):
             album.cover = 1
-        s.query(Cover).filter_by(id=cover.id, deleted=False).update({'deleted': True})
+        s.query(Cover).filter_by(id=cover.id, deleted=False).update({'deleted': True, 'updated': utc_now()})
         s.commit()
             
     def handle_delete(self, path):
@@ -416,8 +416,8 @@ class Scanner(object):
 
     def scan_all(self):
         self.log.info(u"Scanning everything ...")
+        self.preprocess_deleted()
         self.process_files()
-        self.postprocess_deleted()
         self.postprocess_albums()
         self.postprocess_covers()
         self.schedule_scan()

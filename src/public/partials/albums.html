@@ -1,16 +1,28 @@
 <div class="albums-container">
-    <div ng-repeat="album in albums" class="album_block" ng-click="redirect_album(album.artist.id, album.id)">
-        <div ng-switch on="album.cover">
-            <div ng-switch-when="1" class="album_cover">
-                <img src="/static/img/default_album.jpg" />
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="btn-group subnav-buttons" role="group">
+                <a type="button" class="btn btn-default" ng-href="#/tracks"><span class="icon glyphicon glyphicon-list"></span> Show all tracks</a>
             </div>
-            <div ng-switch-default class="album_cover">
-                <img ng-if="album" src="/cover/{{ session_id() }}/0/{{ album.cover }}" />
+            <div class="btn-group subnav-buttons" role="group">
+                <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-folder-open"></span> Add a collection</a>
             </div>
         </div>
-        <div class="album_text">
-            <span class="title">{{ album.title }}</span><br />
-            <span class="artist">by {{ album.artist.name }}</span>
+    </div>
+    <div>
+        <div ng-repeat="album in albums" class="album_block" ng-click="redirect_album(album.artist.id, album.id)">
+            <div ng-switch on="album.cover">
+                <div ng-switch-when="1" class="album_cover">
+                    <img src="/static/img/default_album.jpg" />
+                </div>
+                <div ng-switch-default class="album_cover">
+                    <img ng-if="album" src="/cover/{{ session_id() }}/0/{{ album.cover }}" />
+                </div>
+            </div>
+            <div class="album_text">
+                <span class="title">{{ album.title }}</span><br />
+                <span class="artist">by {{ album.artist.name }}</span>
+            </div>
         </div>
     </div>
 </div>

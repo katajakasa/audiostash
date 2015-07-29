@@ -9,8 +9,13 @@ body {
     .icon {
         float: left;
         margin-top: 2px;
-        margin-right: 3px;
+        margin-right: 10px;
     }
+}
+
+.subnav-buttons {
+    margin-bottom: 5px;
+    margin-left: 15px;
 }
 
 .sm2-bar-ui {
@@ -39,6 +44,10 @@ body {
 .tracks-container {
     .ui-grid, .ui-grid-viewport, .ui-grid-canvas {
         height: auto !important;
+    }
+
+    .tracks-search {
+        margin-bottom: 15px;
     }
 
     .track_info {
@@ -74,10 +83,6 @@ body {
         .artist_title {
             font-size: 24px;
         }
-    }
-
-    .album-playlist-buttons {
-        margin-bottom: 15px;
     }
 
     .ui-grid, .ui-grid-viewport, .ui-grid-canvas {
