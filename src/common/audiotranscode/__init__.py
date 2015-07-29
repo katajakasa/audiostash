@@ -189,7 +189,7 @@ class AudioTranscode:
                                    if enc.available()]
         self.available_decoders = [dec for dec in AudioTranscode.Decoders
                                    if dec.available()]
-        self.bitrate = {'mp3': 160, 'ogg': 128, 'aac': 128}
+        self.bitrate = {'mp3': 256, 'ogg': 128, 'aac': 128}
 
     def available_encoder_formats(self):
         """returns the names of all available encoder formats"""

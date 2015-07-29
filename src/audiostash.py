@@ -14,6 +14,7 @@ from common.tables import \
     Track, Setting, Session, User
 from common.utils import generate_session, to_isodate, from_isodate, utc_now
 from tornado import web, ioloop, gen
+from tornado.httputil import HTTPOutputError
 from sockjs.tornado import SockJSRouter, SockJSConnection
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -289,25 +290,33 @@ class TrackHandler(web.RequestHandler):
         self.set_header("Accept-Ranges", "bytes")
 
         # Find content length and type
-        if song.type in settings.NO_TRANSCODE_FORMATS:
+        is_transcode_op = (song.type in settings.NO_TRANSCODE_FORMATS)
+        if is_transcode_op:
             size = song.bytes_len
             self.set_header("Content-Type", mimetypes.guess_type("file://"+song.file)[0])
         else:
             size = song.bytes_tc_len
             self.set_header("Content-Type", "audio/mpeg")
 
+        # Set end range
+        if not range_end or range_end >= size:
+            range_end = size-1
+
+        # Limit single request size for non-transcode ops
+        # 10M ought to be enough for everybody
+        if not is_transcode_op and range_end - range_start > 10485760:
+            range_end = range_start + 10485760 - 1
+
+        # Make sure range_start and range_end are withing size limits
+        if range_start >= size:
+            self.set_status(416)
+            self.finish()
+            return
+
         # Set range headers
-        left = size - range_start
-        if range_end:
-            left = (range_end+1) - range_start
-            self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end, size))
-        else:
-            self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, size-1, size))
-
-        # Set length headers (take into account range start point)
+        left = (range_end+1) - range_start
         self.set_header("Content-Length", left)
-
-        # Flush headers
+        self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end, size))
         self.flush()
 
         # If the format is already mp3 or ogg, just stream out.
@@ -330,27 +339,40 @@ class TrackHandler(web.RequestHandler):
             stream = at.transcode_stream(song.file, settings.TRANSCODE_FORMAT)
 
             # First, seek to range_start
-            seek = 0
+            seek_now = 0
             for data in stream:
-                s = len(data)
-                if seek+s >= range_start:
-                    w = range_start - seek
-                    if w < s:
-                        self.write(data[w:])
-                        self.flush()
-                        left -= w
+                r_len = len(data)
+                seek_now += r_len
+                if seek_now == range_start:
                     break
-                seek += s
+                if seek_now > range_start:
+                    w = seek_now-range_start
+                    self.write(data[0:w])
+                    self.flush()
+                    left -= w
+                    break
 
             # Just stream normally
             for data in stream:
-                self.write(data)
-                self.flush()
-                left -= len(data)
+                if left > 0:
+                    rsize = len(data)
+
+                    if left < rsize:
+                        self.write(data[0:left])
+                        left -= left
+                    else:
+                        self.write(data)
+                        left -= rsize
+                    self.flush()
+                else:
+                    break
 
         # Flush the last bytes before finishing up.
         self.flush()
-        self.finish()
+        try:
+            self.finish()
+        except HTTPOutputError, o:
+            log.error(o)
 
 
 if __name__ == '__main__':
