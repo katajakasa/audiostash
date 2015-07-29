@@ -259,11 +259,20 @@ class Scanner(object):
                     try:
                         img = Image.open(cover_art[0])
                         size = 200, 200
-                        out_file = os.path.join(settings.COVER_CACHE_DIRECTORY, '{}.jpg'.format(cover.id))
+                        out_file = os.path.join(settings.COVER_CACHE_DIRECTORY, '{}_small.jpg'.format(cover.id))
                         img.thumbnail(size, Image.ANTIALIAS)
                         img.save(out_file, "JPEG")
                     except IOError:
-                        self.log.error("Unable to create a thumbnail for {}".format(cover.id))
+                        self.log.error("Unable to create a small thumbnail for cover ID {}".format(cover.id))
+
+                    try:
+                        img = Image.open(cover_art[0])
+                        size = 800, 800
+                        out_file = os.path.join(settings.COVER_CACHE_DIRECTORY, '{}_medium.jpg'.format(cover.id))
+                        img.thumbnail(size, Image.ANTIALIAS)
+                        img.save(out_file, "JPEG")
+                    except IOError:
+                        self.log.error("Unable to create a medium thumbnail for cover ID {}".format(cover.id))
 
                     # Set new cover id for album, and update tracks and the album timestamp for sync
                     s.query(Track).filter_by(album=album.id).update({'updated': utc_now()})

@@ -83,7 +83,7 @@ class AudioStashSock(SockJSConnection):
             })
             return
         self.send_error('auth', "Invalid session", 403)
-        log.info("Authentication failed.", ip=self.ip)
+        log.warning("Authentication failed.", ip=self.ip)
 
     def on_login_msg(self, packet_msg):
         username = packet_msg.get('username', '')
@@ -94,6 +94,7 @@ class AudioStashSock(SockJSConnection):
             user = s.query(User).filter_by(username=username).one()
         except NoResultFound:
             self.send_error('login', 'Incorrect username or password', 401)
+            log.warning("Invalid username or password in login request.", ip=self.ip)
             return
 
         # If user exists and password matches, pass onwards!
@@ -122,6 +123,7 @@ class AudioStashSock(SockJSConnection):
             })
         else:
             self.send_error('login', 'Incorrect username or password', 401)
+            log.warning("Invalid username or password in login request.", ip=self.ip)
             return
 
     def on_logout_msg(self, packet_msg):
@@ -150,6 +152,7 @@ class AudioStashSock(SockJSConnection):
                 remote_ts = from_isodate(packet_msg.get('ts'))
             except:
                 self.send_error('sync', "Invalid timestamp", 400)
+                log.warning("Invalid timestamp in sync request.", ip=self.ip)
                 return
 
             # Find table model that matches the name
@@ -161,6 +164,7 @@ class AudioStashSock(SockJSConnection):
                 }[name]
             except KeyError:
                 self.send_error('sync', "Invalid table name", 400)
+                log.warning("Invalid table name in sync request.", ip=self.ip)
                 return
 
             # Send message containing all new data in the table
@@ -210,6 +214,8 @@ class AudioStashSock(SockJSConnection):
 
 
 class CoverHandler(web.RequestHandler):
+    @web.asynchronous
+    @gen.coroutine
     def get(self, session_id, size_flag, cover_id):
         # Make sure session is valid
         try:
@@ -217,10 +223,22 @@ class CoverHandler(web.RequestHandler):
         except NoResultFound:
             self.set_status(401)
             self.finish("401")
+            log.warning("Cover ID {} requested without a valid session.".format(cover_id))
+            return
+
+        # Find the cover we want
+        try:
+            cover = session_get().query(Cover).filter_by(id=cover_id).one()
+        except NoResultFound:
+            self.set_status(404)
+            self.finish("404")
+            log.warning("Cover ID {} does not exist.".format(cover_id))
             return
 
         if size_flag == "0":
-            cover_file = os.path.join(settings.COVER_CACHE_DIRECTORY, "{}.jpg".format(cover_id))
+            cover_file = os.path.join(settings.COVER_CACHE_DIRECTORY, "{}_small.jpg".format(cover.id))
+        elif size_flag == "1":
+            cover_file = os.path.join(settings.COVER_CACHE_DIRECTORY, "{}_medium.jpg".format(cover.id))
         else:
             # Find the cover we want
             try:
@@ -228,30 +246,33 @@ class CoverHandler(web.RequestHandler):
             except NoResultFound:
                 self.set_status(404)
                 self.finish("404")
+                log.warning("Cover ID {} does not exist.".format(cover_id))
                 return
 
             # Make sure we have a filename
             if not cover.file:
                 self.set_status(404)
                 self.finish("404")
+                log.warning("Cover file for ID {} is not set.".format(cover_id))
                 return
 
             cover_file = cover.file
 
-        # Make sure the file exists on disk
-        if not os.path.isfile(cover_file):
-            self.set_status(404)
-            self.finish("404")
-            return
-
         # Just pick content type and dump out the file.
         self.set_header("Content-Type", mimetypes.guess_type("file://"+cover_file)[0])
-        with file(cover_file, 'rb') as f:
-            while True:
-                data = f.read(8192)
-                if not data:
-                    break
+        try:
+            with file(cover_file, 'rb') as f:
+                def get_data(callback):
+                    callback(f.read())
+
+                data = yield gen.Task(get_data)
                 self.write(data)
+        except IOError:
+            self.set_status(404)
+            self.finish("404")
+            log.warning("Matching file for cover ID {} does not exist.".format(cover_id))
+            return
+
         self.finish()
 
 
@@ -265,6 +286,7 @@ class TrackHandler(web.RequestHandler):
         except NoResultFound:
             self.set_status(401)
             self.finish("401")
+            log.warning("Track ID {} requested without a valid session.".format(song_id))
             return
 
         # Find the song we want
@@ -273,6 +295,7 @@ class TrackHandler(web.RequestHandler):
         except NoResultFound:
             self.set_status(404)
             self.finish("404")
+            log.warning("Nonexistent track ID {} requested.".format(song_id))
             return
 
         # See if we got range
@@ -300,20 +323,14 @@ class TrackHandler(web.RequestHandler):
             size = song.bytes_tc_len
             self.set_header("Content-Type", "audio/mpeg")
 
-        # Make sure the file exists on disk
-        if not os.path.isfile(song_file):
-            self.set_status(404)
-            self.finish("404")
-            return
-
         # Set end range
         if not range_end or range_end >= size:
             range_end = size-1
 
         # Limit single request size.
-        # 10M ought to be enough for everybody
-        if range_end - range_start > 10485760:
-            range_end = range_start + 10485760 - 1
+        # 4M ought to be enough for everybody
+        if range_end - range_start > 8388608:
+            range_end = range_start + 8388608 - 1
 
         # Make sure range_start and range_end are withing size limits
         if range_start >= size:
@@ -328,24 +345,32 @@ class TrackHandler(web.RequestHandler):
         self.flush()
 
         # Stream out
-        with open(song_file, 'rb') as f:
-            f.seek(range_start)
+        try:
+            with open(song_file, 'rb') as f:
+                f.seek(range_start)
 
-            # Just read as long as we have data to read.
-            while left:
-                data = f.read(left if left < 8192 else 8192)
-                left -= len(data)
-                if not data:
-                    break
-                self.write(data)
-                self.flush()
+                while left:
+                    r = 1048576 if 1048576 < left else left
+
+                    def get_data(callback):
+                        callback(f.read(r))
+
+                    data = yield gen.Task(get_data)
+                    left -= r
+                    self.write(data)
+                    self.flush()
+        except IOError:
+            self.set_status(404)
+            self.finish("404")
+            log.error("Requested track ID {} doesn't exist.".format(song.id))
+            return
 
         # Flush the last bytes before finishing up.
         self.flush()
         try:
             self.finish()
         except HTTPOutputError, o:
-            log.error(o)
+            log.error("Error while serving track ID {}: {}.".format(song_id, o))
 
 
 if __name__ == '__main__':
