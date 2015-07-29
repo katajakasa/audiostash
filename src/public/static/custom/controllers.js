@@ -137,7 +137,7 @@ app.controller('PlayerController', ['$scope', 'AuthService', 'PlaylistService',
     }
 ]);
 
-app.controller('TrackController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
+app.controller('AlbumTrackController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
     function ($scope, $indexedDB, $location, $routeParams, PlaylistService) {
         $scope.$scope = $scope;
         $scope.artist = null;
@@ -172,7 +172,7 @@ app.controller('TrackController', ['$scope', '$indexedDB', '$location', '$routeP
 
         function refresh() {
             $indexedDB.openStore('track', function (store) {
-                store.getAll().then(function (tracks) {
+                store.eachWhere(store.query().$index('is_audiobook').$eq(0)).then(function (tracks) {
                     $scope.grid_opts.minRowsToShow = tracks.length;
                     $scope.grid_opts.virtualizationThreshold = tracks.length;
                     $scope.grid_opts.data = tracks;
@@ -262,7 +262,6 @@ app.controller('NavController', ['$scope', '$location', 'AuthService',
         $scope.sites = [
             {url: '/albums', name: 'Albums', requireLogin: true},
             {url: '/audiobooks', name: 'Audiobooks', requireLogin: true},
-            {url: '/tracks', name: 'Tracks', requireLogin: true},
             {url: '/login', name: 'Login', requireLogin: false},
             {url: '/logout', name: 'Logout', requireLogin: true}
         ];
