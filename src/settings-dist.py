@@ -20,9 +20,13 @@ MUSIC_DIRECTORY = "/mnt/music"
 # On windows, please use slashes instead of backslashes (eg. C:/music/)
 AUDIOBOOK_DIRECTORY = None
 
-# Image and transcoded file cache directory
+# Image cache directory
 # Make sure this is not inside or the same as MUSIC_DIRECTORY
-COVER_CACHE_DIRECTORY = "/mnt/tmp"
+COVER_CACHE_DIRECTORY = '/mnt/tmp/cover'
+
+# Transcoded file cache directory (Reserve plenty of space!)
+# Make sure this is not inside or the same as MUSIC_DIRECTORY
+MUSIC_CACHE_DIRECTORY = '/mnt/tmp/music'
 
 # Cover filename hints (looks for eg. cover_*.<ext> in album path.
 COVER_HINTS = [

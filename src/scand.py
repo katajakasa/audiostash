@@ -66,18 +66,8 @@ class Scanner(object):
 
         # Create a new entry for track
         track = Track(file=path, album=1, artist=1, type=ext[1:])
-
-        # Check if we need to find track transcoded length
-        # If not, just set it to file length.
         track.bytes_len = os.path.getsize(path)
-        if track.type not in settings.NO_TRANSCODE_FORMATS:
-            at = audiotranscode.AudioTranscode()
-            maxlen = 0
-            for data in at.transcode_stream(path, settings.TRANSCODE_FORMAT):
-                maxlen += len(data)
-            track.bytes_tc_len = maxlen
-        else:
-            track.bytes_tc_len = track.bytes_len
+        track.bytes_tc_len = 0
 
         if m:
             # Find artist
@@ -171,6 +161,26 @@ class Scanner(object):
         # Save everything
         s.add(track)
         s.commit()
+
+        # Check if we need to transcode
+        if track.type not in settings.NO_TRANSCODE_FORMATS:
+            self.transcode(s, track)
+
+    def transcode(self, s, track):
+        at = audiotranscode.AudioTranscode()
+        stream = at.transcode_stream(track.file, settings.TRANSCODE_FORMAT)
+
+        cache_file = os.path.join(
+            settings.MUSIC_CACHE_DIRECTORY,
+            "{}.{}".format(track.id, settings.TRANSCODE_FORMAT))
+        with open(cache_file, 'wb') as f:
+            maxlen = 0
+            for data in stream:
+                f.write(data)
+                maxlen += len(data)
+            track.bytes_tc_len = maxlen
+            s.commit()
+            self.log.debug("Transcoded ID {}, result size was {}.".format(track.id, maxlen))
 
     def postprocess_deleted(self):
         s = session_get()
@@ -450,6 +460,7 @@ if __name__ == '__main__':
 
     # Make sure the cover cache directory exists
     ensure_dir(settings.COVER_CACHE_DIRECTORY)
+    ensure_dir(settings.MUSIC_CACHE_DIRECTORY)
 
     # Init database and bootstrap the scanner
     database_init(settings.DBFILE)

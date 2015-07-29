@@ -5,7 +5,6 @@ import settings
 import os
 import mimetypes
 
-from common import audiotranscode
 from common.stashlog import StashLog
 
 from passlib.hash import pbkdf2_sha256
@@ -290,21 +289,30 @@ class TrackHandler(web.RequestHandler):
         self.set_header("Accept-Ranges", "bytes")
 
         # Find content length and type
-        is_transcode_op = (song.type in settings.NO_TRANSCODE_FORMATS)
-        if is_transcode_op:
+        if song.type in settings.NO_TRANSCODE_FORMATS:
             size = song.bytes_len
+            song_file = song.file
             self.set_header("Content-Type", mimetypes.guess_type("file://"+song.file)[0])
         else:
+            song_file = os.path.join(
+                settings.MUSIC_CACHE_DIRECTORY,
+                "{}.{}".format(song.id, settings.TRANSCODE_FORMAT))
             size = song.bytes_tc_len
             self.set_header("Content-Type", "audio/mpeg")
+
+        # Make sure the file exists on disk
+        if not os.path.isfile(song_file):
+            self.set_status(404)
+            self.finish("404")
+            return
 
         # Set end range
         if not range_end or range_end >= size:
             range_end = size-1
 
-        # Limit single request size for non-transcode ops
+        # Limit single request size.
         # 10M ought to be enough for everybody
-        if not is_transcode_op and range_end - range_start > 10485760:
+        if range_end - range_start > 10485760:
             range_end = range_start + 10485760 - 1
 
         # Make sure range_start and range_end are withing size limits
@@ -319,53 +327,18 @@ class TrackHandler(web.RequestHandler):
         self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end, size))
         self.flush()
 
-        # If the format is already mp3 or ogg, just stream out.
-        # If format is something else, attempt to transcode.
-        if song.type in settings.NO_TRANSCODE_FORMATS:
-            with open(song.file, 'rb') as f:
-                f.seek(range_start)
+        # Stream out
+        with open(song_file, 'rb') as f:
+            f.seek(range_start)
 
-                # Just read as long as we have data to read.
-                while left:
-                    data = f.read(left if left < 8192 else 8192)
-                    left -= len(data)
-                    if not data:
-                        break
-                    self.write(data)
-                    self.flush()
-        else:
-            # Transcode from starting point
-            at = audiotranscode.AudioTranscode()
-            stream = at.transcode_stream(song.file, settings.TRANSCODE_FORMAT)
-
-            # First, seek to range_start
-            seek_now = 0
-            for data in stream:
-                r_len = len(data)
-                seek_now += r_len
-                if seek_now == range_start:
+            # Just read as long as we have data to read.
+            while left:
+                data = f.read(left if left < 8192 else 8192)
+                left -= len(data)
+                if not data:
                     break
-                if seek_now > range_start:
-                    w = seek_now-range_start
-                    self.write(data[0:w])
-                    self.flush()
-                    left -= w
-                    break
-
-            # Just stream normally
-            for data in stream:
-                if left > 0:
-                    rsize = len(data)
-
-                    if left < rsize:
-                        self.write(data[0:left])
-                        left -= left
-                    else:
-                        self.write(data)
-                        left -= rsize
-                    self.flush()
-                else:
-                    break
+                self.write(data)
+                self.flush()
 
         # Flush the last bytes before finishing up.
         self.flush()
