@@ -329,8 +329,8 @@ class TrackHandler(web.RequestHandler):
 
         # Limit single request size.
         # 4M ought to be enough for everybody
-        if range_end - range_start > 8388608:
-            range_end = range_start + 8388608 - 1
+        #if range_end - range_start > 8388608:
+        #    range_end = range_start + 8388608 - 1
 
         # Make sure range_start and range_end are withing size limits
         if range_start >= size:
