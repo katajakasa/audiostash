@@ -327,26 +327,22 @@ class TrackHandler(web.RequestHandler):
         if not range_end or range_end >= size:
             range_end = size-1
 
-        # Limit single request size.
-        # 4M ought to be enough for everybody
-        #if range_end - range_start > 8388608:
-        #    range_end = range_start + 8388608 - 1
-
         # Make sure range_start and range_end are withing size limits
         if range_start >= size:
             self.set_status(416)
             self.finish()
             return
 
-        # Set range headers
-        left = (range_end+1) - range_start
-        self.set_header("Content-Length", left)
-        self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end, size))
-        self.flush()
-
         # Stream out
         try:
             with open(song_file, 'rb') as f:
+                # Set range headers
+                left = (range_end+1) - range_start
+                self.set_header("Content-Length", left)
+                self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end, size))
+                self.flush()
+
+                # Forward to starting position
                 f.seek(range_start)
 
                 while left:

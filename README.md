@@ -12,9 +12,10 @@ transcoding from other formats to mp3 on-the-fly.
 Dependencies
 ------------
 
-```pip install --upgrade -r deploy/requirements.pip```
-
-You also need to have ffmpeg binary installed.
+1. Have python2.7, virtualenv, pip and bower installed.
+2. For python packages, ```pip install --upgrade -r deploy/requirements.pip```
+3. For JS packages, ```bower install```
+4. You may also need to have ffmpeg, lame, flac etc. binaries installed.
 
 Installation
 ------------
@@ -27,9 +28,8 @@ Installation
 6. Connect with browser to your server to the port you defined in settings.py.
 7. Enjoy!
 
-For proxying with nginx, there is a skeleton config file in 
-deploy/audiostasn.nginx
-For autostarting with systemd, there are service files in deploy/audiostash-scand.service and deploy/audiostash-webui.service.
+For proxying with nginx, there is a skeleton config file in deploy/audiostasn.nginx
+For autostarting with systemd, there are service files in deploy-directory.
 
 License
 -------
