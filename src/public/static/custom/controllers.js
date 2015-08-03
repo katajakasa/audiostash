@@ -42,7 +42,7 @@ app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService',
         });
 
         soundManager.setup({
-            url: '/static/lib/soundmanagerv297a/swf/'
+            url: '/static/components/soundmanager/swf/'
         });
 
         // Initialize our services
