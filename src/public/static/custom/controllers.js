@@ -80,6 +80,17 @@ app.controller('AlbumsController', ['$scope', '$rootScope', '$indexedDB', '$loca
     }
 ]);
 
+app.controller('SettingsController', ['$scope', '$rootScope', 'SYNC_EVENTS', 'DataService',
+    function ($scope, $rootScope, SYNC_EVENTS, DataService) {
+        $scope.resetClient = function() {
+            DataService.stop();
+            DataService.clear_database();
+            DataService.clear_localstorage();
+            DataService.start();
+        }
+    }
+]);
+
 app.controller('AudiobooksController', ['$scope', '$rootScope', '$indexedDB', '$location', 'SYNC_EVENTS',
     function ($scope, $rootScope, $indexedDB, $location, SYNC_EVENTS) {
         $scope.albums = [];
@@ -262,6 +273,7 @@ app.controller('NavController', ['$scope', '$location', 'AuthService',
         $scope.sites = [
             {url: '/albums', name: 'Albums', requireLogin: true},
             {url: '/audiobooks', name: 'Audiobooks', requireLogin: true},
+            {url: '/settings', name: 'Settings', requireLogin: true},
             {url: '/login', name: 'Login', requireLogin: false},
             {url: '/logout', name: 'Logout', requireLogin: true}
         ];

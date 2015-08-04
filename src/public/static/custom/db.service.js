@@ -20,7 +20,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
 
         function sync_data_fetch() {
             // If there is nothing more to sync, stop here.
-            if (sync_list.length == 0) {
+            if (sync_list.length == 0 || svc == null) {
                 schedule_next_sync();
                 console.log("Sync finished.");
                 $rootScope.$broadcast(SYNC_EVENTS.stopped);
@@ -63,6 +63,12 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         }
 
         function sync_event(msg) {
+            // Just don't do anything if the service is disabled
+            if(svc == null) {
+                return;
+            }
+
+            // ... Otherwise handle the message
             if (msg['error'] == 1) {
                 console.error("Error while syncing: '" + msg['data']['message'] + "'. Scheduling new sync.");
                 schedule_next_sync();
@@ -83,6 +89,14 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
             }
         }
 
+        function clear_localstorage() {
+            localStorage.clear();
+        }
+
+        function clear_database() {
+            $indexedDB.deleteDatabase("audiostash");
+        }
+
         function schedule_next_sync() {
             svc = $timeout(function () {
                 sync_check_start();
@@ -95,6 +109,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         }
 
         function sync_stop() {
+            sync_list = [];
             if (svc != null) {
                 $timeout.cancel(svc);
                 svc = null;
@@ -108,7 +123,9 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         return {
             setup: setup,
             start: sync_init,
-            stop: sync_stop
+            stop: sync_stop,
+            clear_database: clear_database,
+            clear_localstorage: clear_localstorage
         }
     }
 ]);
