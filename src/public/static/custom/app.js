@@ -80,6 +80,11 @@ app.config(['$routeProvider',
                 templateUrl: '/partials/playlists.html',
                 requireLogin: true
             }).
+            when('/settings', {
+                templateUrl: '/partials/settings.html',
+                controller: 'SettingsController',
+                requireLogin: true
+            }).
             otherwise({
                 redirectTo: '/login'
             });
