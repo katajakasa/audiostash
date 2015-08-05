@@ -24,7 +24,8 @@
     "ng-sockjs": "~0.0.1",
     "sockjs": "~0.3.4",
     "soundmanager": "*",
-    "angular-ui-grid": "~3.0.1"
+    "angular-ui-grid": "~3.0.1",
+    "angular-window-events": "*"
   },
   "resolutions": {
     "angular": "1.3.17"
