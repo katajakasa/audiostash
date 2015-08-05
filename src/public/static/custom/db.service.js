@@ -4,6 +4,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
     function ($indexedDB, $rootScope, $timeout, SockService, SYNC_EVENTS) {
         var svc = null;
         var sync_list = [];
+        var stopped = true;
         var sync_tables = [
             'artist',
             'album',
@@ -98,17 +99,20 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         }
 
         function schedule_next_sync() {
+            if(stopped) return;
             svc = $timeout(function () {
                 sync_check_start();
             }, 10000);
         }
 
         function sync_init() {
+            stopped = false;
             reset_localstorage();
             sync_check_start();
         }
 
         function sync_stop() {
+            stopped = true;
             sync_list = [];
             if (svc != null) {
                 $timeout.cancel(svc);

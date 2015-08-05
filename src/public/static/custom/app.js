@@ -7,7 +7,8 @@ var app = angular.module(
         'indexedDB',
         'ng.sockjs',
         'ui.bootstrap',
-        'ui.grid'
+        'ui.grid',
+        'windowEventBroadcasts'
     ]
 );
 
