@@ -154,6 +154,11 @@ app.controller('AlbumTrackController', ['$scope', '$indexedDB', '$location', '$r
         $scope.artist = null;
         $scope.album = null;
         $scope.grid_opts = {
+            enableFiltering: false,
+            onRegisterApi: function(gridApi){
+              $scope.gridApi = gridApi;
+              $scope.gridApi.grid.registerRowsProcessor( $scope.singleFilter, 200 );
+            },
             enableSorting: true,
             enableHorizontalScrollbar: 0,
             enableVerticalScrollbar: 0,
@@ -179,6 +184,36 @@ app.controller('AlbumTrackController', ['$scope', '$indexedDB', '$location', '$r
 
         $scope.add_song = function (track) {
             PlaylistService.add(track.id);
+        };
+
+        $scope.filter = function() {
+            $scope.gridApi.grid.refresh();
+        };
+
+        $scope.singleFilter = function (rows) {
+            var filter_val = $scope.filterValue;
+            if(filter_val != undefined) {
+                filter_val = filter_val.toLowerCase();
+            }
+            var matcher = new RegExp(filter_val);
+            rows.forEach(function(row) {
+                var match = false;
+                [
+                    row.entity.title,
+                    row.entity.artist.name,
+                    row.entity.album.title,
+                    row.entity.date,
+                    row.entity.genre
+                ].forEach(function (field) {
+                    if (field.toLowerCase().match(matcher)) {
+                        match = true;
+                    }
+                });
+                if (!match) {
+                    row.visible = false;
+                }
+            });
+            return rows;
         };
 
         function refresh() {

@@ -1,7 +1,7 @@
 <div class="container-fluid tracks-container">
     <div class="row tracks-search">
         <div class="col-md-4 col-sm-6">
-            <input type="text" class="form-control" placeholder="Search">
+            <input type="text" class="form-control" ng-model='filterValue' ng-change="filter()" placeholder="Search">
         </div>
     </div>
     <div class="track_info" ng-if="grid_opts.data">
