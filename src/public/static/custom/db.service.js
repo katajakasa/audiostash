@@ -8,7 +8,9 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         var sync_tables = [
             'artist',
             'album',
-            'track'
+            'track',
+            'collection',
+            'setting'
         ];
 
         function sync_check_start() {
@@ -102,7 +104,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
             if(stopped) return;
             svc = $timeout(function () {
                 sync_check_start();
-            }, 10000);
+            }, 30000);
         }
 
         function sync_init() {

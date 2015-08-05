@@ -156,6 +156,21 @@ class Setting(Base, SyncMixin):
         }
 
 
+class Collection(Base, SyncMixin):
+    __tablename__ = "collection"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(32))
+    parent = Column(ForeignKey('collection.id'), nullable=True)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'deleted': self.deleted,
+            'name': self.name,
+            'parent': self.parent
+        }
+
+
 class Log(Base, SyncMixin):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
