@@ -3,3 +3,4 @@ src/audiostash.db
 src/settings.py
 *.pyc
 src/public/static/components/*
+200*.js
