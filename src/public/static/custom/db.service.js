@@ -25,7 +25,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
 
         function sync_data_fetch() {
             // If there is nothing more to sync, stop here.
-            if (sync_list.length == 0 || svc == null) {
+            if (sync_list.length == 0) {
                 schedule_next_sync();
                 console.log("Sync finished.");
                 $rootScope.$broadcast(SYNC_EVENTS.stopped);
@@ -112,7 +112,9 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         function sync_init() {
             stopped = false;
             reset_localstorage();
-            sync_check_start();
+            update_timeout = 1000;
+            schedule_next_sync();
+            update_timeout = 30000;
         }
 
         function sync_stop() {
@@ -133,7 +135,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
             start: sync_init,
             stop: sync_stop,
             clear_database: clear_database,
-            clear_localstorage: clear_localstorage,
+            clear_localstorage: clear_localstorage
         }
     }
 ]);

@@ -80,6 +80,7 @@ app.config(['$routeProvider',
             }).
             when('/playlists', {
                 templateUrl: '/partials/playlists.html',
+                controller: 'PlaylistsController',
                 requireLogin: true
             }).
             when('/settings', {

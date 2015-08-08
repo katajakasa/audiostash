@@ -46,9 +46,9 @@ app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService',
         });
 
         // Initialize our services
-        AuthService.setup();
         SockService.setup();
         DataService.setup();
+        AuthService.setup();
         PlaylistService.setup();
 
         $rootScope.session_id = AuthService.session_id;
@@ -145,6 +145,45 @@ app.controller('PlayerController', ['$scope', 'AuthService', 'PlaylistService',
         $scope.is_visible = function () {
             return (AuthService.is_authenticated() && PlaylistService.has_data());
         }
+    }
+]);
+
+app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
+    function ($scope, $indexedDB, $location, $routeParams, PlaylistService) {
+        $scope.grid_opts = {
+            enableFiltering: false,
+            enableSorting: true,
+            enableHorizontalScrollbar: 0,
+            enableVerticalScrollbar: 0,
+            enableGridMenu: false,
+            rowHeight: 30,
+            columnDefs: [
+                {
+                    name: "del",
+                    displayName: "",
+                    width: 30,
+                    enableColumnMenu: false,
+                    cellTemplate: '<div><span ng-click="grid.appScope.del_playlist(row.entity)" class="playlist_del track_icon glyphicon glyphicon-minus-sign"></span></div>'
+                },
+                {name: 'Name', field: 'name'}
+            ]
+        };
+
+        $scope.del_playlist = function(playlist) {
+
+        };
+
+        function refresh() {
+            $indexedDB.openStore('playlist', function (store) {
+                store.getAll().then(function (playlists) {
+                    $scope.grid_opts.minRowsToShow = playlists.length;
+                    $scope.grid_opts.virtualizationThreshold = playlists.length;
+                    $scope.grid_opts.data = playlists;
+                });
+            });
+        }
+
+        refresh();
     }
 ]);
 
@@ -308,6 +347,7 @@ app.controller('NavController', ['$scope', '$location', 'AuthService',
         $scope.sites = [
             {url: '/albums', name: 'Albums', requireLogin: true},
             {url: '/audiobooks', name: 'Audiobooks', requireLogin: true},
+            {url: '/playlists', name: 'Playlists', requireLogin: true},
             {url: '/settings', name: 'Settings', requireLogin: true},
             {url: '/login', name: 'Login', requireLogin: false},
             {url: '/logout', name: 'Logout', requireLogin: true}
