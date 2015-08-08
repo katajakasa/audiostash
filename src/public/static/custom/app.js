@@ -8,7 +8,8 @@ var app = angular.module(
         'ng.sockjs',
         'ui.bootstrap',
         'ui.grid',
-        'windowEventBroadcasts'
+        'windowEventBroadcasts',
+        'dialogs.main'
     ]
 );
 

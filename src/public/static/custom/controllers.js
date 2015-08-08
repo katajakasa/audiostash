@@ -148,8 +148,8 @@ app.controller('PlayerController', ['$scope', 'AuthService', 'PlaylistService',
     }
 ]);
 
-app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
-    function ($scope, $indexedDB, $location, $routeParams, PlaylistService) {
+app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService', 'dialogs',
+    function ($scope, $indexedDB, $location, $routeParams, PlaylistService, dialogs) {
         $scope.grid_opts = {
             enableFiltering: false,
             enableSorting: true,
@@ -191,6 +191,27 @@ app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$ro
 
         };
 
+        $scope.create_playlist = function() {
+            console.log("New playlist");
+            var dlg = dialogs.create(
+                '/dialogs/newplaylist.html',
+                'newPlaylistController',
+                {},
+                {
+                    size:'lg',
+                    keyboard: true,
+                    backdrop: false,
+                    windowClass: 'my-class'
+                }
+            );
+            dlg.result.then(function(name){
+                $scope.name = name;
+            }, function(){
+                if(angular.equals($scope.name, ''))
+                    $scope.name = 'You did not enter in your name!';
+            });
+        };
+
         function refresh() {
             $indexedDB.openStore('playlist', function (store) {
                 store.getAll().then(function (playlists) {
@@ -204,6 +225,23 @@ app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$ro
         refresh();
     }
 ]);
+
+app.controller('newPlaylistController', function ($scope, $modalInstance, data) {
+    $scope.name = '';
+
+    $scope.cancel = function () {
+        $modalInstance.dismiss('Canceled');
+    };
+
+    $scope.save = function () {
+        $modalInstance.close($scope.name);
+    };
+
+    $scope.hitEnter = function (evt) {
+        if (angular.equals(evt.keyCode, 13) && !(angular.equals($scope.name, null) || angular.equals($scope.name, '')))
+            $scope.save();
+    };
+});
 
 app.controller('AlbumTrackController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
     function ($scope, $indexedDB, $location, $routeParams, PlaylistService) {

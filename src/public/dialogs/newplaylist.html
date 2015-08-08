@@ -1,0 +1,29 @@
+<div class="modal-header">
+    <h4 class="modal-title"><span class="glyphicon glyphicon-file"></span> Playlist's Name</h4>
+</div>
+<div class="modal-body">
+    <ng-form name="playlistNameDialog" novalidate role="form">
+        <div class="form-group input-group-lg"
+             ng-class="{true: 'has-error'}[playlistNameDialog.name.$dirty && playlistNameDialog.name.$invalid]">
+            <label class="control-label" for="course">Name:</label>
+            <input type="text"
+                   class="form-control"
+                   name="username"
+                   id="username"
+                   ng-maxlength="32"
+                   ng-model="user.name"
+                   ng-keyup="hitEnter($event)"
+                   required />
+            <span class="help-block">Enter a name for the new playlist</span>
+        </div>
+    </ng-form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
+    <button type="button"
+            class="btn btn-primary"
+            ng-click="save()"
+            ng-disabled="(playlistNameDialog.$dirty && playlistNameDialog.$invalid) || playlistNameDialog.$pristine">
+        Save
+    </button>
+</div>
