@@ -33,6 +33,7 @@ app.config(function ($indexedDBProvider) {
             track_store.createIndex("artist_id", "artist_id", {unique: false});
             track_store.createIndex("track", "track", {unique: false});
             track_store.createIndex("disctrack", ['disc', 'track'], {unique: false});
+            track_store.createIndex("is_audiobook", "album.is_audiobook", {unique: false});
             settings_store.createIndex("key", "key", {unique: true});
         });
         /*.upgradeDatabase(2, function (event, db, tx) {

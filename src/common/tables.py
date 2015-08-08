@@ -157,6 +157,7 @@ class Setting(Base, SyncMixin):
             'value': self.value
         }
 
+
 class Log(Base, SyncMixin):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
@@ -211,3 +212,7 @@ def database_ensure_initial():
         s.add(artist)
         s.commit()
 
+    if s.query(Playlist).count() == 0:
+        playlist = Playlist(id=1, name="Scratchpad")
+        s.add(playlist)
+        s.commit()

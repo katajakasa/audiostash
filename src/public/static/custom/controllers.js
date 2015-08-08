@@ -163,13 +163,31 @@ app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$ro
                     displayName: "",
                     width: 30,
                     enableColumnMenu: false,
-                    cellTemplate: '<div><span ng-click="grid.appScope.del_playlist(row.entity)" class="playlist_del track_icon glyphicon glyphicon-minus-sign"></span></div>'
+                    cellTemplate: '<div><span ng-if="row.entity.id > 1" ng-click="grid.appScope.del_playlist(row.entity)" class="playlist_del playlist_icon glyphicon glyphicon-minus-sign"></span></div>'
+                },
+                {
+                    name: "play",
+                    displayName: "",
+                    width: 30,
+                    enableColumnMenu: false,
+                    cellTemplate: '<div><span ng-if="row.entity.id > 1" ng-click="grid.appScope.sel_playlist(row.entity)" class="playlist_edit playlist_icon glyphicon glyphicon-play-circle"></span></div>'
+                },
+                {
+                    name: "edit",
+                    displayName: "",
+                    width: 30,
+                    enableColumnMenu: false,
+                    cellTemplate: '<div><span class="playlist_edit playlist_icon glyphicon glyphicon-edit"></span></div>'
                 },
                 {name: 'Name', field: 'name'}
             ]
         };
 
         $scope.del_playlist = function(playlist) {
+
+        };
+
+        $scope.sel_playlist = function(playlist) {
 
         };
 

@@ -1,12 +1,12 @@
-<div class="container-fluid tracks-container">
-    <div class="row">
+<div class="container-fluid playlists-container">
+    <div class="row playlists_toolbox">
         <div class="col-sm-12">
-            <div class="btn-group subnav-buttons" role="group">
-                <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-list"></span> New Playlist</a>
-            </div>
+            <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-file"></span> New Playlist</a>
+            <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-hdd"></span> Save Scratchpad</a>
+            <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-trash"></span> Clear Scratchpad</a>
         </div>
     </div>
-    <div class="track_info" ng-if="grid_opts.data">
-        <div ui-grid="grid_opts" ui-grid-auto-resize ng-style="{ 'height': height }" class="track_grid"></div>
+    <div class="playlists_info" ng-if="grid_opts.data">
+        <div ui-grid="grid_opts" ui-grid-auto-resize ng-style="{ 'height': height }" class="playlist_grid"></div>
     </div>
 </div>

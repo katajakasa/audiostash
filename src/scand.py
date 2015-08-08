@@ -54,19 +54,25 @@ class Scanner(object):
     def handle_audio(self, path, ext, is_audiobook):
         s = session_get()
 
-        # Return here if track already exists for this path
-        if s.query(Track).filter_by(file=path).count() > 0:
-            return
-        
+        # If track already exists and has not changed, stop here
+        # Otherwise either edit or create new track entry
+        fsize = os.path.getsize(path)
+        try:
+            track = s.query(Track).filter_by(file=path).one()
+            if fsize == track.bytes_len:
+                return
+        except NoResultFound:
+            track = Track(file=path, album=1, artist=1, type=ext[1:])
+
+        # Attempt to open up the file in Mutagen for tag information
         m = None
         try:
             m = mutagen.File(path)
         except:
             self.log.warning(u"Could not read header for {}".format(path))
 
-        # Create a new entry for track
-        track = Track(file=path, album=1, artist=1, type=ext[1:])
-        track.bytes_len = os.path.getsize(path)
+        # Set correct sizes
+        track.bytes_len = fsize
         track.bytes_tc_len = 0
 
         if m:
