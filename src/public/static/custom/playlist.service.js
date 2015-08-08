@@ -51,11 +51,11 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'PLAYLIST_EVENTS',
         }
 
         function save() {
-            localStorage['playlist'] = angular.toJson(playlist);
+            localStorage['saved_playlist'] = angular.toJson(playlist);
         }
 
         function load() {
-            var jsonlist = localStorage.getItem('playlist');
+            var jsonlist = localStorage.getItem('saved_playlist');
             if (jsonlist != null && jsonlist != "") {
                 playlist = angular.fromJson(jsonlist);
                 $rootScope.$broadcast(PLAYLIST_EVENTS.refresh);

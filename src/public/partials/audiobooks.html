@@ -1,11 +1,4 @@
 <div class="albums-container">
-    <div class="row">
-        <div class="col-sm-12">
-            <div class="btn-group subnav-buttons" role="group">
-                <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-folder-open"></span> Add a collection</a>
-            </div>
-        </div>
-    </div>
     <div>
         <div ng-repeat="album in albums" class="album_block" ng-click="redirect_album(album.artist.id, album.id)">
             <div ng-switch on="album.cover">

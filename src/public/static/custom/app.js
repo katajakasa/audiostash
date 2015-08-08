@@ -20,24 +20,25 @@ app.config(function ($indexedDBProvider) {
             var album_store = db.createObjectStore("album", {keyPath: "id"});
             var directory_store = db.createObjectStore("directory", {keyPath: "id"});
             var playlist_store = db.createObjectStore("playlist", {keyPath: "id"});
-            var playlisttrack_store = db.createObjectStore("playlisttrack", {keyPath: "id"});
+            var playlistitem_store = db.createObjectStore("playlisttrack", {keyPath: "id"});
             var track_store = db.createObjectStore("track", {keyPath: "id"});
-            var config_store = db.createObjectStore("config", {keyPath: "id"});
+            var settings_store = db.createObjectStore("setting", {keyPath: "id"});
 
             album_store.createIndex("artist", "artist.id", {unique: false});
             album_store.createIndex("is_audiobook", "is_audiobook", {unique: false});
-            playlisttrack_store.createIndex("playlist", "playlist", {unique: false});
-            playlisttrack_store.createIndex("track", "track", {unique: false});
+            playlistitem_store.createIndex("playlist", "playlist", {unique: false});
+            playlistitem_store.createIndex("track", "track", {unique: false});
             track_store.createIndex("album_id", "album_id", {unique: false});
             track_store.createIndex("dir", "dir", {unique: false});
             track_store.createIndex("artist_id", "artist_id", {unique: false});
             track_store.createIndex("track", "track", {unique: false});
             track_store.createIndex("disctrack", ['disc', 'track'], {unique: false});
-            config_store.createIndex("key", "key", {unique: true});
-        }).upgradeDatabase(2, function (event, db, tx) {
-            var track_store = event.currentTarget.transaction.objectStore("track");
-            track_store.createIndex("is_audiobook", "album.is_audiobook", {unique: false});
+            settings_store.createIndex("key", "key", {unique: true});
         });
+        /*.upgradeDatabase(2, function (event, db, tx) {
+            var track_store = event.currentTarget.transaction.objectStore("track");
+
+        });*/
 });
 
 // Sockjs

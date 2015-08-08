@@ -11,18 +11,6 @@ app.run(['$rootScope', '$location', 'AuthService', 'DataService', 'SockService',
             }
         });
 
-        // When switching in to the tab, start DB updates
-        $rootScope.$on('$windowFocus', function(broadcastEvent, browserEvent) {
-            console.log("Switching in to the window; starting DB updates.");
-            DataService.start();
-        });
-
-        // When switching out of the tab, stop DB updates
-        $rootScope.$on('$windowBlur', function(broadcastEvent, browserEvent) {
-            console.log("Switching out of the window; halting DB updates.");
-            DataService.stop();
-        });
-
         // If we hear and event about login failing, just redirect back to /login page
         $rootScope.$on(AUTH_EVENTS.loginFailed, function (event, args) {
             $location.path("/login");

@@ -9,8 +9,8 @@ from common.stashlog import StashLog
 
 from passlib.hash import pbkdf2_sha256
 from common.tables import \
-    session_get, database_init, Artist, Album, Cover, Directory, Playlist, PlaylistItem, \
-    Track, Setting, Session, User, Collection
+    session_get, database_init, Artist, Album, Cover, Playlist, PlaylistItem, \
+    Track, Setting, Session, User
 from common.utils import generate_session, to_isodate, from_isodate, utc_now
 from tornado import web, ioloop, gen
 from tornado.httputil import HTTPOutputError
@@ -161,8 +161,9 @@ class AudioStashSock(SockJSConnection):
                     'artist': Artist,
                     'album': Album,
                     'track': Track,
-                    'collection': Collection,
-                    'setting': Setting
+                    'setting': Setting,
+                    'playlist': Playlist,
+                    'playlistitem': PlaylistItem
                 }[name]
             except KeyError:
                 self.send_error('sync', "Invalid table name", 400)

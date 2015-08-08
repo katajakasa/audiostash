@@ -4,13 +4,15 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
     function ($indexedDB, $rootScope, $timeout, SockService, SYNC_EVENTS) {
         var svc = null;
         var sync_list = [];
-        var stopped = true;
+        var stopped = false;
+        var update_timeout = 30000;
         var sync_tables = [
             'artist',
             'album',
             'track',
-            'collection',
-            'setting'
+            'setting',
+            'playlist',
+            'playlistitem'
         ];
 
         function sync_check_start() {
@@ -104,7 +106,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
             if(stopped) return;
             svc = $timeout(function () {
                 sync_check_start();
-            }, 30000);
+            }, update_timeout);
         }
 
         function sync_init() {
@@ -131,7 +133,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
             start: sync_init,
             stop: sync_stop,
             clear_database: clear_database,
-            clear_localstorage: clear_localstorage
+            clear_localstorage: clear_localstorage,
         }
     }
 ]);

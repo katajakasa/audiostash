@@ -95,12 +95,14 @@ class PlaylistItem(Base, SyncMixin):
     __tablename__ = "playlistitem"
     id = Column(Integer, primary_key=True)
     track = Column(ForeignKey('track.id'))
+    playlist = Column(ForeignKey('playlist.id'))
     number = Column(Integer)
 
     def serialize(self):
         return {
             'id': self.id,
             'deleted': self.deleted,
+            'playlist': self.playlist,
             'track': self.track,
             'number': self.number
         }
@@ -155,22 +157,6 @@ class Setting(Base, SyncMixin):
             'value': self.value
         }
 
-
-class Collection(Base, SyncMixin):
-    __tablename__ = "collection"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(32))
-    parent = Column(ForeignKey('collection.id'), nullable=True)
-
-    def serialize(self):
-        return {
-            'id': self.id,
-            'deleted': self.deleted,
-            'name': self.name,
-            'parent': self.parent
-        }
-
-
 class Log(Base, SyncMixin):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
@@ -215,6 +201,7 @@ def session_get():
 
 def database_ensure_initial():
     s = session_get()
+
     if s.query(Album).count() == 0:
         cover = Cover(id=1, file="")
         artist = Artist(id=1, name="Unknown")
@@ -223,3 +210,4 @@ def database_ensure_initial():
         s.add(album)
         s.add(artist)
         s.commit()
+

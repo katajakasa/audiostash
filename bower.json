@@ -25,9 +25,11 @@
     "sockjs": "~0.3.4",
     "soundmanager": "*",
     "angular-ui-grid": "~3.0.1",
-    "angular-window-events": "*"
+    "angular-window-events": "*",
+    "angular-dialog-service": "~5.2.8"
   },
   "resolutions": {
-    "angular": "1.3.17"
+    "angular": "1.3.17",
+    "angular-bootstrap": "~0.13.2"
   }
 }
