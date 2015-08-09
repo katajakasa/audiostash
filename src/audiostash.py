@@ -469,6 +469,6 @@ if __name__ == '__main__':
 
     # Start up everything
     app = web.Application(handlers, **conf)
-    app.listen(settings.PORT,  no_keep_alive=True)
+    app.listen(settings.PORT)
     ioloop.IOLoop.instance().start()
     log.info("Stopping AudioStash server.")
