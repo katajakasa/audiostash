@@ -11,7 +11,7 @@ from passlib.hash import pbkdf2_sha256
 from common.tables import \
     session_get, database_init, Artist, Album, Cover, Playlist, PlaylistItem, \
     Track, Setting, Session, User
-from common.utils import generate_session, to_isodate, from_isodate, utc_now
+from common.utils import generate_session, to_isodate, from_isodate, utc_now, utc_minus_delta
 from tornado import web, ioloop, gen
 from tornado.httputil import HTTPOutputError
 from sockjs.tornado import SockJSRouter, SockJSConnection
@@ -139,6 +139,43 @@ class AudioStashSock(SockJSConnection):
         self.authenticated = False
         self.sid = None
 
+    def on_playlist_msg(self, packet_msg):
+        if not self.authenticated:
+            return
+
+        query = packet_msg.get('query', '')
+        if query == 'add_playlist':
+            name = packet_msg.get('name')
+
+            s = session_get()
+            if s.query(Playlist).filter_by(name=name, deleted=False).count() > 0:
+                self.send_error('playlist', "Playlist with given name already exists", 500)
+                log.warning("Playlist with given name already exists.", ip=self.ip)
+            else:
+                playlist = Playlist(name=name, updated=utc_now())
+                s.add(playlist)
+                s.commit()
+                self.sync_table('playlist', Playlist, utc_minus_delta(5))
+                log.debug("A new playlist created!")
+
+        if query == 'del_playlist':
+            playlist_id = packet_msg.get('id')
+            if id > 1:
+                s = session_get()
+                s.query(Playlist).filter_by(id=playlist_id).update({'deleted': True, 'updated': utc_now()})
+                s.commit()
+                self.sync_table('playlist', Playlist, utc_minus_delta(5))
+                log.debug("Playlist deleted!")
+
+    def sync_table(self, name, table, remote_ts):
+        # Send message containing all new data in the table
+        self.send_message('sync', {
+            'query': 'request',
+            'table': name,
+            'ts': to_isodate(utc_now()),
+            'data': [t.serialize() for t in session_get().query(table).filter(table.updated > remote_ts)]
+        })
+
     def on_sync_msg(self, packet_msg):
         if not self.authenticated:
             return
@@ -171,13 +208,7 @@ class AudioStashSock(SockJSConnection):
                 return
 
             # Send message containing all new data in the table
-            self.send_message('sync', {
-                'query': 'request',
-                'table': name,
-                'ts': to_isodate(utc_now()),
-                'data': [t.serialize() for t in session_get().query(table).filter(table.updated > remote_ts)]
-            })
-            return
+            self.sync_table(name, table, remote_ts)
 
     def on_unknown_msg(self, packet_msg):
         log.debug("Unknown or nonexistent packet type!", ip=self.ip)
@@ -206,6 +237,7 @@ class AudioStashSock(SockJSConnection):
             'login': self.on_login_msg,
             'logout': self.on_logout_msg,
             'sync': self.on_sync_msg,
+            'playlist': self.on_playlist_msg,
             'unknown': self.on_unknown_msg
         }
         cbs[packet_type if packet_type in cbs else 'unknown'](packet_msg)

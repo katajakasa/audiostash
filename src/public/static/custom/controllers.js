@@ -148,8 +148,8 @@ app.controller('PlayerController', ['$scope', 'AuthService', 'PlaylistService',
     }
 ]);
 
-app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService', 'dialogs',
-    function ($scope, $indexedDB, $location, $routeParams, PlaylistService, dialogs) {
+app.controller('PlaylistsController', ['$rootScope', '$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService', 'dialogs', 'SYNC_EVENTS',
+    function ($rootScope, $scope, $indexedDB, $location, $routeParams, PlaylistService, dialogs, SYNC_EVENTS) {
         $scope.grid_opts = {
             enableFiltering: false,
             enableSorting: true,
@@ -184,7 +184,10 @@ app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$ro
         };
 
         $scope.del_playlist = function(playlist) {
-
+            var dlg = dialogs.confirm("Delete playlist", "Are you sure you want to remove this playlist ?");
+            dlg.result.then(function(btn){
+                PlaylistService.delete_playlist(playlist.id);
+            });
         };
 
         $scope.sel_playlist = function(playlist) {
@@ -204,11 +207,9 @@ app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$ro
                     windowClass: 'my-class'
                 }
             );
-            dlg.result.then(function(name){
-                $scope.name = name;
-            }, function(){
-                if(angular.equals($scope.name, ''))
-                    $scope.name = 'You did not enter in your name!';
+            dlg.result.then(function(data){
+                console.log(data);
+                PlaylistService.create_playlist(data.name);
             });
         };
 
@@ -222,23 +223,28 @@ app.controller('PlaylistsController', ['$scope', '$indexedDB', '$location', '$ro
             });
         }
 
+        // Automatically refresh on new data
+        $rootScope.$on(SYNC_EVENTS.newData, function (event, args) {
+            refresh();
+        });
+
         refresh();
     }
 ]);
 
 app.controller('newPlaylistController', function ($scope, $modalInstance, data) {
-    $scope.name = '';
+    $scope.data = {name: ''};
 
     $scope.cancel = function () {
         $modalInstance.dismiss('Canceled');
     };
 
     $scope.save = function () {
-        $modalInstance.close($scope.name);
+        $modalInstance.close($scope.data);
     };
 
     $scope.hitEnter = function (evt) {
-        if (angular.equals(evt.keyCode, 13) && !(angular.equals($scope.name, null) || angular.equals($scope.name, '')))
+        if (angular.equals(evt.keyCode, 13) && !(angular.equals($scope.data.name, null) || angular.equals($scope.data.name, '')))
             $scope.save();
     };
 });

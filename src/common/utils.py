@@ -18,6 +18,11 @@ def utc_now():
     return pytz.utc.localize(datetime.datetime.utcnow())
 
 
+def utc_minus_delta(seconds):
+    """ Gets UTC datetime with deltatime substracted """
+    return pytz.utc.localize(datetime.datetime.utcnow() - datetime.timedelta(seconds=seconds))
+
+
 def to_isodate(dt):
     """ Converts datetime to iso8601-timestamp """
     return isodate.datetime_isoformat(dt)

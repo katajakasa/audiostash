@@ -1,7 +1,7 @@
 'use strict';
 
-app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'PLAYLIST_EVENTS',
-    function ($rootScope, $indexedDB, PLAYLIST_EVENTS) {
+app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'SockService', 'PLAYLIST_EVENTS',
+    function ($rootScope, $indexedDB, SockService, PLAYLIST_EVENTS) {
         var playlist = [];
 
         function add(track_id) {
@@ -70,6 +70,26 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'PLAYLIST_EVENTS',
             return (playlist.length > 0);
         }
 
+        function create_playlist(name) {
+            SockService.send({
+                'type': 'playlist',
+                'message': {
+                    'query': 'add_playlist',
+                    'name': name
+                }
+            });
+        }
+
+        function delete_playlist(id) {
+            SockService.send({
+                'type': 'playlist',
+                'message': {
+                    'query': 'del_playlist',
+                    'id': id
+                }
+            });
+        }
+
         return {
             add: add,
             del: del,
@@ -78,7 +98,9 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'PLAYLIST_EVENTS',
             setup: load,
             clear: clear,
             add_track: add_track,
-            add_tracks: add_tracks
+            add_tracks: add_tracks,
+            create_playlist: create_playlist,
+            delete_playlist: delete_playlist
         };
     }
 ]);
