@@ -2,8 +2,8 @@
     <div class="row playlists_toolbox">
         <div class="col-sm-12">
             <a type="button" ng-click="create_playlist()" class="btn btn-default"><span class="icon glyphicon glyphicon-file"></span> New Playlist</a>
-            <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-hdd"></span> Save Scratchpad</a>
-            <a type="button" class="btn btn-default"><span class="icon glyphicon glyphicon-trash"></span> Clear Scratchpad</a>
+            <a type="button" ng-click="save_scratchpad()" class="btn btn-default"><span class="icon glyphicon glyphicon-hdd"></span> Save Scratchpad</a>
+            <a type="button" ng-click="clear_scratchpad()" class="btn btn-default"><span class="icon glyphicon glyphicon-trash"></span> Clear Scratchpad</a>
         </div>
     </div>
     <div class="playlists_info" ng-if="grid_opts.data">

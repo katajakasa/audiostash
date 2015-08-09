@@ -1,0 +1,9 @@
+<div class="container-fluid playlistedit-container">
+    <h1>
+        <span id="header">Playlist:</span>
+        <span id="name">{{ playlist.name }}</span>
+    </h1>
+    <div class="playlistedit_info" ng-if="grid_opts.data">
+        <div ui-grid="grid_opts" ui-grid-auto-resize ng-style="{ 'height': height }" class="playlistedit_grid"></div>
+    </div>
+</div>

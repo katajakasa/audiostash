@@ -1,0 +1,24 @@
+<div class="modal-header">
+    <h4 class="modal-title"><span class="glyphicon glyphicon-hdd"></span> Save Scratchpad</h4>
+</div>
+<div class="modal-body">
+    <ng-form name="saveScratchpadDialog" novalidate role="form">
+        <div class="form-group input-group-lg"
+             ng-class="{true: 'has-error'}[playlistNameDialog.plname.$dirty && playlistNameDialog.plname.$invalid]">
+            <label class="control-label" for="plid">Name:</label>
+            <select name="plid"
+                    id="plid"
+                    ng-model="data.id"
+                    class="form-control"
+                    ng-options="pl.name for pl in playlists track by pl.id"
+                    required>
+                <option value="0" selected="selected">--- Choose a playlist ---</option>
+            </select>
+            <span class="help-block">Select a playlist to save into (old content will be replaced).</span>
+        </div>
+    </ng-form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
+    <button type="button" class="btn btn-primary" ng-click="save()">Save</button>
+</div>

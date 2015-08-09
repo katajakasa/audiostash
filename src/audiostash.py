@@ -157,15 +157,51 @@ class AudioStashSock(SockJSConnection):
                 s.commit()
                 self.sync_table('playlist', Playlist, utc_minus_delta(5))
                 log.debug("A new playlist created!")
+                return
 
         if query == 'del_playlist':
             playlist_id = packet_msg.get('id')
             if id > 1:
                 s = session_get()
+                s.query(PlaylistItem).filter_by(playlist=playlist_id, deleted=False).update({'deleted': True, 'updated': utc_now()})
                 s.query(Playlist).filter_by(id=playlist_id).update({'deleted': True, 'updated': utc_now()})
                 s.commit()
                 self.sync_table('playlist', Playlist, utc_minus_delta(5))
                 log.debug("Playlist deleted!")
+                return
+
+        if query == 'copy_scratchpad':
+            to_id = packet_msg.get('id')
+            s = session_get()
+            s.query(PlaylistItem).filter_by(playlist=to_id, deleted=False).update({'deleted': True, 'updated': utc_now()})
+            s.commit()
+
+            for item in s.query(PlaylistItem).filter_by(playlist=1, deleted=False):
+                plitem = PlaylistItem(track=item.track, playlist=to_id, number=item.number, updated=utc_now())
+                s.add(plitem)
+            s.commit()
+
+            self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5))
+            log.debug("Playlist copied!")
+            return
+
+        if query == 'save_playlist':
+            playlist_id = packet_msg.get('id')
+            items = packet_msg.get('tracks')
+
+            s = session_get()
+            s.query(PlaylistItem).filter_by(playlist=playlist_id, deleted=False).update({'deleted': True, 'updated': utc_now()})
+            s.commit()
+            k = 0
+            for item in items:
+                plitem = PlaylistItem(track=item['id'], playlist=playlist_id, number=k, updated=utc_now())
+                s.add(plitem)
+                k += 1
+            s.commit()
+
+            self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5))
+            log.debug("Playlist updated!")
+            return
 
     def sync_table(self, name, table, remote_ts):
         # Send message containing all new data in the table

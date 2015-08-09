@@ -1,11 +1,11 @@
 <div class="modal-header">
-    <h4 class="modal-title"><span class="glyphicon glyphicon-file"></span> Playlist's Name</h4>
+    <h4 class="modal-title"><span class="glyphicon glyphicon-file"></span> New Playlist</h4>
 </div>
 <div class="modal-body">
     <ng-form name="playlistNameDialog" novalidate role="form">
         <div class="form-group input-group-lg"
-             ng-class="{true: 'has-error'}[playlistNameDialog.name.$dirty && playlistNameDialog.name.$invalid]">
-            <label class="control-label" for="course">Name:</label>
+             ng-class="{true: 'has-error'}[playlistNameDialog.plname.$dirty && playlistNameDialog.plname.$invalid]">
+            <label class="control-label" for="plname">Name:</label>
             <input type="text"
                    class="form-control"
                    name="plname"

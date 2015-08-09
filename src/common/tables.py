@@ -103,7 +103,8 @@ class PlaylistItem(Base, SyncMixin):
             'id': self.id,
             'deleted': self.deleted,
             'playlist': self.playlist,
-            'track': self.track,
+            'track': session_get().query(Track).filter_by(id=self.track, deleted=False).one().serialize(),
+            'track_id': self.track,
             'number': self.number
         }
 

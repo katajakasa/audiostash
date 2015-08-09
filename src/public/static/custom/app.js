@@ -19,16 +19,20 @@ app.config(function ($indexedDBProvider) {
         .upgradeDatabase(1, function (event, db, tx) {
             var artist_store = db.createObjectStore("artist", {keyPath: "id"});
             var album_store = db.createObjectStore("album", {keyPath: "id"});
-            var directory_store = db.createObjectStore("directory", {keyPath: "id"});
             var playlist_store = db.createObjectStore("playlist", {keyPath: "id"});
-            var playlistitem_store = db.createObjectStore("playlisttrack", {keyPath: "id"});
+            var playlistitem_store = db.createObjectStore("playlistitem", {keyPath: "id"});
             var track_store = db.createObjectStore("track", {keyPath: "id"});
             var settings_store = db.createObjectStore("setting", {keyPath: "id"});
 
+            album_store.createIndex("id","id", {unique: false});
             album_store.createIndex("artist", "artist.id", {unique: false});
             album_store.createIndex("is_audiobook", "is_audiobook", {unique: false});
             playlistitem_store.createIndex("playlist", "playlist", {unique: false});
             playlistitem_store.createIndex("track", "track", {unique: false});
+            playlistitem_store.createIndex("number", "number", {unique: false});
+            playlistitem_store.createIndex("id","id", {unique: false});
+            playlist_store.createIndex("id","id", {unique: false});
+            track_store.createIndex("id","id", {unique: false});
             track_store.createIndex("album_id", "album_id", {unique: false});
             track_store.createIndex("dir", "dir", {unique: false});
             track_store.createIndex("artist_id", "artist_id", {unique: false});
@@ -36,6 +40,7 @@ app.config(function ($indexedDBProvider) {
             track_store.createIndex("disctrack", ['disc', 'track'], {unique: false});
             track_store.createIndex("is_audiobook", "album.is_audiobook", {unique: false});
             settings_store.createIndex("key", "key", {unique: true});
+            artist_store.createIndex("id","id", {unique: false});
         });
         /*.upgradeDatabase(2, function (event, db, tx) {
             var track_store = event.currentTarget.transaction.objectStore("track");
@@ -83,6 +88,11 @@ app.config(['$routeProvider',
             when('/playlists', {
                 templateUrl: '/partials/playlists.html',
                 controller: 'PlaylistsController',
+                requireLogin: true
+            }).
+            when('/playlist/:plId', {
+                templateUrl: '/partials/playlistedit.html',
+                controller: 'PlaylistEditController',
                 requireLogin: true
             }).
             when('/settings', {
