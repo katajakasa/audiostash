@@ -5,7 +5,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         var svc = null;
         var sync_list = [];
         var stopped = false;
-        var update_timeout = 30000;
+        var update_timeout = 25000;
         var sync_tables = [
             'artist',
             'album',
