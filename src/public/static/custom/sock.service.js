@@ -7,6 +7,7 @@ app.factory('SockService', ['socket',
 
         function setup() {
             socket.onOpen(function () {
+                console.log("SockJS connection opened.");
                 for (var i = 0; i < open_handlers.length; i++) {
                     open_handlers[i]();
                 }
