@@ -51,15 +51,18 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'SockService', 'PLAY
         }
 
         function save() {
-            localStorage['saved_playlist'] = angular.toJson(playlist);
+            SockService.send({
+                'type': 'playlist',
+                'message': {
+                    'query': 'save_playlist',
+                    'id': 1,
+                    'tracks': playlist
+                }
+            });
         }
 
         function load() {
-            var jsonlist = localStorage.getItem('saved_playlist');
-            if (jsonlist != null && jsonlist != "") {
-                playlist = angular.fromJson(jsonlist);
-                $rootScope.$broadcast(PLAYLIST_EVENTS.refresh);
-            }
+            load_playlist(1);
         }
 
         function get_list() {
@@ -90,6 +93,28 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'SockService', 'PLAY
             });
         }
 
+        function copy_scratchpad(id) {
+            SockService.send({
+                'type': 'playlist',
+                'message': {
+                    'query': 'copy_scratchpad',
+                    'id': id
+                }
+            });
+        }
+
+        function load_playlist(id) {
+            playlist = [];
+            $indexedDB.openStore('playlistitem', function (store) {
+                store.eachWhere(store.query().$index('playlist').$eq(id)).then(function(entries) {
+                    for(var i = 0; i < entries.length; i++) {
+                        _add_track(entries[i].track);
+                    }
+                    $rootScope.$broadcast(PLAYLIST_EVENTS.refresh);
+                });
+            });
+        }
+
         return {
             add: add,
             del: del,
@@ -100,7 +125,9 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'SockService', 'PLAY
             add_track: add_track,
             add_tracks: add_tracks,
             create_playlist: create_playlist,
-            delete_playlist: delete_playlist
+            delete_playlist: delete_playlist,
+            load_playlist: load_playlist,
+            copy_scratchpad: copy_scratchpad
         };
     }
 ]);

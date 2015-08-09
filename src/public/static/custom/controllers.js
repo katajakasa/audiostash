@@ -122,7 +122,6 @@ app.controller('PlaylistController', ['$scope', '$window', 'PlaylistService', 'P
         $scope.$on(PLAYLIST_EVENTS.refresh, function (event, args) {
             $scope.playlist = PlaylistService.get_list();
             $window.sm2BarPlayers[0].playlistController.refresh();
-            console.log("Updated.");
         });
 
         $scope.del_song = function (track_id) {
@@ -145,6 +144,47 @@ app.controller('PlayerController', ['$scope', 'AuthService', 'PlaylistService',
         $scope.is_visible = function () {
             return (AuthService.is_authenticated() && PlaylistService.has_data());
         }
+    }
+]);
+
+app.controller('PlaylistEditController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
+    function ($scope, $indexedDB, $location, $routeParams, PlaylistService) {
+        $scope.playlist = null;
+        $scope.grid_opts = {
+            enableFiltering: false,
+            enableSorting: true,
+            enableHorizontalScrollbar: 0,
+            enableVerticalScrollbar: 0,
+            enableGridMenu: false,
+            rowHeight: 30,
+            columnDefs: [
+                {name: 'Title', field: 'track.title'},
+                {name: 'Artist', field: 'track.artist.name'},
+                {name: 'Album', field: 'track.album.title'},
+                {name: 'Date', field: 'track.date', width: 70, enableColumnMenu: false},
+                {name: 'Genre', field: 'track.genre', width: 100, enableColumnMenu: false},
+                {name: 'T#', field: 'track.track', width: 50, enableColumnMenu: false},
+                {name: 'D#', field: 'track.disc', width: 50, enableColumnMenu: false}
+            ]
+        };
+
+        function refresh() {
+            var playlist_id = parseInt($routeParams.plId);
+            $indexedDB.openStore('playlist', function(store) {
+                store.find(playlist_id).then(function(item) {
+                    $scope.playlist = item;
+                });
+            });
+            $indexedDB.openStore('playlistitem', function (store) {
+                store.eachWhere(store.query().$index('playlist').$eq(playlist_id)).then(function (tracks) {
+                    $scope.grid_opts.minRowsToShow = tracks.length;
+                    $scope.grid_opts.virtualizationThreshold = tracks.length;
+                    $scope.grid_opts.data = tracks;
+                });
+            });
+        }
+
+        refresh();
     }
 ]);
 
@@ -177,7 +217,7 @@ app.controller('PlaylistsController', ['$rootScope', '$scope', '$indexedDB', '$l
                     displayName: "",
                     width: 30,
                     enableColumnMenu: false,
-                    cellTemplate: '<div><span class="playlist_edit playlist_icon glyphicon glyphicon-edit"></span></div>'
+                    cellTemplate: '<div><span ng-click="grid.appScope.edit_redirect(row.entity)" class="playlist_edit playlist_icon glyphicon glyphicon-edit"></span></div>'
                 },
                 {name: 'Name', field: 'name'}
             ]
@@ -190,25 +230,54 @@ app.controller('PlaylistsController', ['$rootScope', '$scope', '$indexedDB', '$l
             });
         };
 
-        $scope.sel_playlist = function(playlist) {
-
+        $scope.edit_redirect = function(row) {
+            $location.path('/playlist/' + row.id);
         };
 
-        $scope.create_playlist = function() {
-            console.log("New playlist");
+        $scope.save_scratchpad = function() {
             var dlg = dialogs.create(
-                '/dialogs/newplaylist.html',
-                'newPlaylistController',
+                '/dialogs/savescratchpad.html',
+                'saveScratchpadController',
                 {},
                 {
-                    size:'lg',
+                    size: 'lg',
                     keyboard: true,
                     backdrop: false,
                     windowClass: 'my-class'
                 }
             );
             dlg.result.then(function(data){
-                console.log(data);
+                PlaylistService.copy_scratchpad(data.id.id);
+            });
+        };
+
+        $scope.sel_playlist = function(playlist) {
+            var dlg = dialogs.confirm("Load playlist", "Are you sure you want to discard all items on scratchpad and load this playlist ?");
+            dlg.result.then(function(btn){
+                PlaylistService.load_playlist(playlist.id);
+            });
+        };
+
+        $scope.clear_scratchpad = function() {
+            var dlg = dialogs.confirm("Clear Scratchpad", "Are you sure you want to discard all items on scratchpad ?");
+            dlg.result.then(function(btn){
+                PlaylistService.clear();
+            });
+        };
+
+        $scope.create_playlist = function() {
+            var dlg = dialogs.create(
+                '/dialogs/newplaylist.html',
+                'newPlaylistController',
+                {},
+                {
+                    size: 'lg',
+                    keyboard: true,
+                    backdrop: false,
+                    windowClass: 'my-class'
+                }
+            );
+            dlg.result.then(function(data){
                 PlaylistService.create_playlist(data.name);
             });
         };
@@ -232,22 +301,57 @@ app.controller('PlaylistsController', ['$rootScope', '$scope', '$indexedDB', '$l
     }
 ]);
 
-app.controller('newPlaylistController', function ($scope, $modalInstance, data) {
-    $scope.data = {name: ''};
+app.controller('newPlaylistController', ['$scope', '$modalInstance', 'data',
+    function ($scope, $modalInstance, data) {
+        $scope.data = {name: ''};
 
-    $scope.cancel = function () {
-        $modalInstance.dismiss('Canceled');
-    };
+        $scope.cancel = function () {
+            $modalInstance.dismiss('Canceled');
+        };
 
-    $scope.save = function () {
-        $modalInstance.close($scope.data);
-    };
+        $scope.save = function () {
+            $modalInstance.close($scope.data);
+        };
 
-    $scope.hitEnter = function (evt) {
-        if (angular.equals(evt.keyCode, 13) && !(angular.equals($scope.data.name, null) || angular.equals($scope.data.name, '')))
-            $scope.save();
-    };
-});
+        $scope.hitEnter = function (evt) {
+            if (angular.equals(evt.keyCode, 13) && !(angular.equals($scope.data.name, null) || angular.equals($scope.data.name, '')))
+                $scope.save();
+        };
+    }
+]);
+
+app.controller('saveScratchpadController', ['$scope', '$modalInstance', '$indexedDB', 'data',
+    function ($scope, $modalInstance, $indexedDB, data) {
+        $scope.data = {id: 0};
+        $scope.playlists = [];
+
+        $scope.cancel = function () {
+            $modalInstance.dismiss('Canceled');
+        };
+
+        $scope.save = function () {
+            $modalInstance.close($scope.data);
+        };
+
+        $scope.hitEnter = function (evt) {
+            if (angular.equals(evt.keyCode, 13) && !(angular.equals($scope.data.name, null) || angular.equals($scope.data.name, '')))
+                $scope.save();
+        };
+
+        function refresh() {
+            $indexedDB.openStore('playlist', function (store) {
+                store.eachWhere(store.query().$index('id').$gt(1)).then(function (playlists) {
+                    $scope.playlists = playlists;
+                    if(playlists.length > 0) {
+                        $scope.data.id = playlists[0];
+                    }
+                });
+            });
+        }
+
+        refresh();
+    }
+]);
 
 app.controller('AlbumTrackController', ['$scope', '$indexedDB', '$location', '$routeParams', 'PlaylistService',
     function ($scope, $indexedDB, $location, $routeParams, PlaylistService) {
