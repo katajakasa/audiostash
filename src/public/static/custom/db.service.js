@@ -16,7 +16,6 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
         ];
 
         function sync_check_start() {
-            console.log("sync_check_start");
             sync_list = sync_tables.slice();
             console.log("Sync starting.");
             $rootScope.$broadcast(SYNC_EVENTS.started);
@@ -32,7 +31,7 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
                 return;
             }
 
-            // Request for data for the first table in the array
+            // Request for data for all tables
             var table_name = sync_list.shift();
             console.log("sync_data_fetch for '" + table_name + "'.");
             SockService.send({
@@ -64,6 +63,16 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
                     $rootScope.$broadcast(SYNC_EVENTS.newData);
                 });
             }
+
+            // If this is a push message, stop execution after handling the response
+            if('push' in msg) {
+                if(msg['push']) {
+                    console.log("Received push notification!");
+                    return;
+                }
+            }
+
+            // ... Otherwise just continue with the data query
             sync_data_fetch();
         }
 
@@ -104,6 +113,10 @@ app.factory('DataService', ['$indexedDB', '$rootScope', '$timeout', 'SockService
 
         function schedule_next_sync() {
             if(stopped) return;
+            if(svc != null) {
+                $timeout.cancel(svc);
+                svc = null;
+            }
             svc = $timeout(function () {
                 sync_check_start();
             }, update_timeout);

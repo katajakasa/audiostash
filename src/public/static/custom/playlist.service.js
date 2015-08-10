@@ -45,33 +45,11 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'SockService', 'PLAY
             }
         }
 
-        function clear() {
-            playlist = [];
-            save();
-        }
-
-        function save() {
-            SockService.send({
-                'type': 'playlist',
-                'message': {
-                    'query': 'save_playlist',
-                    'id': 1,
-                    'tracks': playlist
-                }
-            });
-        }
-
-        function load() {
-            load_playlist(1);
-        }
-
-        function get_list() {
-            return playlist;
-        }
-
-        function has_data() {
-            return (playlist.length > 0);
-        }
+        function clear() { playlist = []; save(); }
+        function save() { save_playlist(1, playlist); }
+        function load() { load_playlist(1); }
+        function get_list() { return playlist; }
+        function has_data() { return (playlist.length > 0); }
 
         function create_playlist(name) {
             SockService.send({
@@ -107,6 +85,9 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'SockService', 'PLAY
             playlist = [];
             $indexedDB.openStore('playlistitem', function (store) {
                 store.eachWhere(store.query().$index('playlist').$eq(id)).then(function(entries) {
+                    entries.sort(function(a, b) {
+                        return a.number - b.number;
+                    });
                     for(var i = 0; i < entries.length; i++) {
                         _add_track(entries[i].track);
                     }
@@ -115,19 +96,52 @@ app.factory('PlaylistService', ['$rootScope', '$indexedDB', 'SockService', 'PLAY
             });
         }
 
+        function save_playlist(id, items) {
+            SockService.send({
+                'type': 'playlist',
+                'message': {
+                    'query': 'save_playlist',
+                    'id': id,
+                    'tracks': items
+                }
+            });
+        }
+
+        function playlist_event(msg) {
+            if (msg['error'] == 1) {
+                console.error("Error in playlist handling: '" + msg['data']['message']);
+            } else {
+                console.log(msg);
+                var data = msg['data'];
+                if(data['query'] == 'update') {
+                    if(data['id'] == 1) {
+                        // Change in scratchpad, reload current playlist
+                        console.log("Update req");
+                        load();
+                    }
+                }
+            }
+        }
+
+        function setup() {
+            SockService.add_recv_handler('playlist', playlist_event);
+            load();
+        }
+
         return {
+            setup: setup,
             add: add,
             del: del,
             get_list: get_list,
             has_data: has_data,
-            setup: load,
             clear: clear,
             add_track: add_track,
             add_tracks: add_tracks,
             create_playlist: create_playlist,
             delete_playlist: delete_playlist,
             load_playlist: load_playlist,
-            copy_scratchpad: copy_scratchpad
+            save_playlist: save_playlist,
+            copy_scratchpad: copy_scratchpad,
         };
     }
 ]);

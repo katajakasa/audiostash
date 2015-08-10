@@ -177,6 +177,7 @@ class AudioStashSock(SockJSConnection):
                 s.commit()
                 self.sync_table('playlist', Playlist, utc_minus_delta(5), push=True)
                 self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
+                self.notify_playlist_changes(playlist_id)
                 log.debug("Playlist and items deleted!")
                 return
 
@@ -196,6 +197,7 @@ class AudioStashSock(SockJSConnection):
             s.commit()
 
             self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
+            self.notify_playlist_changes(to_id)
             log.debug("Playlist copied!")
             return
 
@@ -218,8 +220,16 @@ class AudioStashSock(SockJSConnection):
             s.commit()
 
             self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
+            self.notify_playlist_changes(playlist_id)
             log.debug("Playlist updated!")
             return
+
+    def notify_playlist_changes(self, playlist_id):
+        self.send_message('playlist', {
+            'query': 'update',
+            'id': playlist_id,
+            'push': True,
+        })
 
     def sync_table(self, name, table, remote_ts, push=False):
         # Send message containing all new data in the table

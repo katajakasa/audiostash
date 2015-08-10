@@ -156,6 +156,14 @@ app.controller('PlaylistEditController', ['$scope', '$indexedDB', '$location', '
             enableHorizontalScrollbar: 0,
             enableVerticalScrollbar: 0,
             enableGridMenu: false,
+            rowTemplate: '' +
+            '   <div grid="grid" class="ui-grid-draggable-row" draggable="true">' +
+            '       <div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name"' +
+            '            class="ui-grid-cell"' +
+            '            ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader, \'custom\': true }"' +
+            '            ui-grid-cell>' +
+            '       </div>' +
+            '   </div>',
             rowHeight: 30,
             columnDefs: [
                 {name: 'Title', field: 'track.title'},
@@ -168,6 +176,18 @@ app.controller('PlaylistEditController', ['$scope', '$indexedDB', '$location', '
             ]
         };
 
+        $scope.grid_opts.onRegisterApi = function (gridApi) {
+            gridApi.draggableRows.on.rowDropped($scope, function (info, dropTarget) {
+                var playlist_id = parseInt($routeParams.plId);
+                var list = [];
+                for(var i = 0; i < $scope.grid_opts.data.length; i++) {
+                    var e = $scope.grid_opts.data[i];
+                    list.push({id: e.track.id})
+                }
+                PlaylistService.save_playlist(playlist_id, list);
+            });
+        };
+
         function refresh() {
             var playlist_id = parseInt($routeParams.plId);
             $indexedDB.openStore('playlist', function(store) {
@@ -177,6 +197,9 @@ app.controller('PlaylistEditController', ['$scope', '$indexedDB', '$location', '
             });
             $indexedDB.openStore('playlistitem', function (store) {
                 store.eachWhere(store.query().$index('playlist').$eq(playlist_id)).then(function (tracks) {
+                    tracks.sort(function(a,b) {
+                        return a.number - b.number;
+                    });
                     $scope.grid_opts.minRowsToShow = tracks.length;
                     $scope.grid_opts.virtualizationThreshold = tracks.length;
                     $scope.grid_opts.data = tracks;
