@@ -9,7 +9,8 @@ var app = angular.module(
         'ui.bootstrap',
         'ui.grid',
         'windowEventBroadcasts',
-        'dialogs.main'
+        'dialogs.main',
+        'ui.grid.draggable-rows'
     ]
 );
 

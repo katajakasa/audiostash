@@ -144,6 +144,8 @@ class AudioStashSock(SockJSConnection):
             return
 
         query = packet_msg.get('query', '')
+
+        # Creates a new playlist with a given name. Errors out if the name already exists.
         if query == 'add_playlist':
             name = packet_msg.get('name')
 
@@ -155,25 +157,37 @@ class AudioStashSock(SockJSConnection):
                 playlist = Playlist(name=name, updated=utc_now())
                 s.add(playlist)
                 s.commit()
-                self.sync_table('playlist', Playlist, utc_minus_delta(5))
+                self.sync_table('playlist', Playlist, utc_minus_delta(5), push=True)
                 log.debug("A new playlist created!")
                 return
 
+        # Delete playlist and all related items
         if query == 'del_playlist':
             playlist_id = packet_msg.get('id')
             if id > 1:
                 s = session_get()
-                s.query(PlaylistItem).filter_by(playlist=playlist_id, deleted=False).update({'deleted': True, 'updated': utc_now()})
-                s.query(Playlist).filter_by(id=playlist_id).update({'deleted': True, 'updated': utc_now()})
+                s.query(PlaylistItem).filter_by(playlist=playlist_id, deleted=False).update({
+                    'deleted': True,
+                    'updated': utc_now()
+                })
+                s.query(Playlist).filter_by(id=playlist_id).update({
+                    'deleted': True,
+                    'updated': utc_now()
+                })
                 s.commit()
-                self.sync_table('playlist', Playlist, utc_minus_delta(5))
-                log.debug("Playlist deleted!")
+                self.sync_table('playlist', Playlist, utc_minus_delta(5), push=True)
+                self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
+                log.debug("Playlist and items deleted!")
                 return
 
+        # Copy scratchpad playlist (id 1) to a new playlist
         if query == 'copy_scratchpad':
             to_id = packet_msg.get('id')
             s = session_get()
-            s.query(PlaylistItem).filter_by(playlist=to_id, deleted=False).update({'deleted': True, 'updated': utc_now()})
+            s.query(PlaylistItem).filter_by(playlist=to_id, deleted=False).update({
+                'deleted': True,
+                'updated': utc_now()
+            })
             s.commit()
 
             for item in s.query(PlaylistItem).filter_by(playlist=1, deleted=False):
@@ -181,17 +195,21 @@ class AudioStashSock(SockJSConnection):
                 s.add(plitem)
             s.commit()
 
-            self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5))
+            self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
             log.debug("Playlist copied!")
             return
 
+        # Saves tracks to the given playlist. Clears existing tracks.
         if query == 'save_playlist':
             playlist_id = packet_msg.get('id')
             items = packet_msg.get('tracks')
 
             s = session_get()
-            s.query(PlaylistItem).filter_by(playlist=playlist_id, deleted=False).update({'deleted': True, 'updated': utc_now()})
-            s.commit()
+            s.query(PlaylistItem).filter_by(playlist=playlist_id, deleted=False).update({
+                'deleted': True,
+                'updated': utc_now()
+            })
+
             k = 0
             for item in items:
                 plitem = PlaylistItem(track=item['id'], playlist=playlist_id, number=k, updated=utc_now())
@@ -199,16 +217,17 @@ class AudioStashSock(SockJSConnection):
                 k += 1
             s.commit()
 
-            self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5))
+            self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
             log.debug("Playlist updated!")
             return
 
-    def sync_table(self, name, table, remote_ts):
+    def sync_table(self, name, table, remote_ts, push=False):
         # Send message containing all new data in the table
         self.send_message('sync', {
             'query': 'request',
             'table': name,
             'ts': to_isodate(utc_now()),
+            'push': push,
             'data': [t.serialize() for t in session_get().query(table).filter(table.updated > remote_ts)]
         })
 
@@ -238,13 +257,11 @@ class AudioStashSock(SockJSConnection):
                     'playlist': Playlist,
                     'playlistitem': PlaylistItem
                 }[name]
+                self.sync_table(name, table, remote_ts)
             except KeyError:
                 self.send_error('sync', "Invalid table name", 400)
                 log.warning("Invalid table name in sync request.", ip=self.ip)
                 return
-
-            # Send message containing all new data in the table
-            self.sync_table(name, table, remote_ts)
 
     def on_unknown_msg(self, packet_msg):
         log.debug("Unknown or nonexistent packet type!", ip=self.ip)
