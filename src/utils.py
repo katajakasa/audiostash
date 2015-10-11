@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 def create_admin(_username, _password):
-    database_init(settings.DBFILE)
+    database_init(settings.DATABASE_CONFIG)
     pw_hash = pbkdf2_sha256.encrypt(_password)
     s = session_get()
     user = User(username=_username, password=pw_hash, level=USERLEVELS['admin'])
