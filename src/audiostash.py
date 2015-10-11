@@ -67,6 +67,7 @@ class AudioStashSock(SockJSConnection):
             user = s.query(User).filter_by(id=session.user).one()
         except NoResultFound:
             pass
+        s.close()
 
         # Session found with token.
         if session and user:
@@ -95,6 +96,7 @@ class AudioStashSock(SockJSConnection):
         except NoResultFound:
             self.send_error('login', 'Incorrect username or password', 401)
             log.warning("Invalid username or password in login request.", ip=self.ip)
+            s.close()
             return
 
         # If user exists and password matches, pass onwards!
@@ -124,13 +126,15 @@ class AudioStashSock(SockJSConnection):
         else:
             self.send_error('login', 'Incorrect username or password', 401)
             log.warning("Invalid username or password in login request.", ip=self.ip)
-            return
+
+        s.close()
 
     def on_logout_msg(self, packet_msg):
         # Remove session
         s = session_get()
         s.query(Session).filter_by(key=self.sid).delete()
         s.commit()
+        s.close()
 
         # Dump out log
         log.info("Logged out '{}'.".format(self.sid), ip=self.ip)
@@ -150,6 +154,7 @@ class AudioStashSock(SockJSConnection):
             name = packet_msg.get('name')
 
             s = session_get()
+
             if s.query(Playlist).filter_by(name=name, deleted=False).count() > 0:
                 self.send_error('playlist', "Playlist with given name already exists", 500)
                 log.warning("Playlist with given name already exists.", ip=self.ip)
@@ -159,7 +164,9 @@ class AudioStashSock(SockJSConnection):
                 s.commit()
                 self.sync_table('playlist', Playlist, utc_minus_delta(5), push=True)
                 log.debug("A new playlist created!")
-                return
+
+            s.close()
+            return
 
         # Delete playlist and all related items
         if query == 'del_playlist':
@@ -175,6 +182,7 @@ class AudioStashSock(SockJSConnection):
                     'updated': utc_now()
                 })
                 s.commit()
+                s.close()
                 self.sync_table('playlist', Playlist, utc_minus_delta(5), push=True)
                 self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
                 self.notify_playlist_changes(playlist_id)
@@ -195,6 +203,7 @@ class AudioStashSock(SockJSConnection):
                 plitem = PlaylistItem(track=item.track, playlist=to_id, number=item.number, updated=utc_now())
                 s.add(plitem)
             s.commit()
+            s.close()
 
             self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
             self.notify_playlist_changes(to_id)
@@ -218,6 +227,7 @@ class AudioStashSock(SockJSConnection):
                 s.add(plitem)
                 k += 1
             s.commit()
+            s.close()
 
             self.sync_table('playlistitem', PlaylistItem, utc_minus_delta(5), push=True)
             self.notify_playlist_changes(playlist_id)
@@ -315,10 +325,13 @@ class CoverHandler(web.RequestHandler):
     @web.asynchronous
     @gen.coroutine
     def get(self, session_id, size_flag, cover_id):
+        s = session_get()
+
         # Make sure session is valid
         try:
-            session_get().query(Session).filter_by(key=session_id).one()
+            s.query(Session).filter_by(key=session_id).one()
         except NoResultFound:
+            s.close()
             self.set_status(401)
             self.finish("401")
             log.warning("Cover ID {} requested without a valid session.".format(cover_id))
@@ -326,27 +339,21 @@ class CoverHandler(web.RequestHandler):
 
         # Find the cover we want
         try:
-            cover = session_get().query(Cover).filter_by(id=cover_id).one()
+            cover = s.query(Cover).filter_by(id=cover_id).one()
         except NoResultFound:
+            s.close()
             self.set_status(404)
             self.finish("404")
             log.warning("Cover ID {} does not exist.".format(cover_id))
             return
+
+        s.close()
 
         if size_flag == "0":
             cover_file = os.path.join(settings.COVER_CACHE_DIRECTORY, "{}_small.jpg".format(cover.id))
         elif size_flag == "1":
             cover_file = os.path.join(settings.COVER_CACHE_DIRECTORY, "{}_medium.jpg".format(cover.id))
         else:
-            # Find the cover we want
-            try:
-                cover = session_get().query(Cover).filter_by(id=cover_id).one()
-            except NoResultFound:
-                self.set_status(404)
-                self.finish("404")
-                log.warning("Cover ID {} does not exist.".format(cover_id))
-                return
-
             # Make sure we have a filename
             if not cover.file:
                 self.set_status(404)
@@ -378,10 +385,13 @@ class TrackHandler(web.RequestHandler):
     @web.asynchronous
     @gen.coroutine
     def get(self, session_id, song_id):
+        s = session_get()
+
         # Make sure session is valid
         try:
-            session_get().query(Session).filter_by(key=session_id).one()
+            s.query(Session).filter_by(key=session_id).one()
         except NoResultFound:
+            s.close()
             self.set_status(401)
             self.finish("401")
             log.warning("Track ID {} requested without a valid session.".format(song_id))
@@ -389,12 +399,15 @@ class TrackHandler(web.RequestHandler):
 
         # Find the song we want
         try:
-            song = session_get().query(Track).filter_by(id=song_id).one()
+            song = s.query(Track).filter_by(id=song_id).one()
         except NoResultFound:
+            s.close()
             self.set_status(404)
             self.finish("404")
             log.warning("Nonexistent track ID {} requested.".format(song_id))
             return
+
+        s.close()
 
         # See if we got range
         range_bytes = self.request.headers.get('Range')

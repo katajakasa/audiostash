@@ -187,13 +187,14 @@ class Session(Base):
     start = Column(DateTime(timezone=True), default=utc_now())
 
 
+_engine = None
 _session = sessionmaker()
 
 
 def database_init(engine_str):
-    engine = create_engine(engine_str)
-    _session.configure(bind=engine)
-    Base.metadata.create_all(engine)
+    _engine = create_engine(engine_str)
+    _session.configure(bind=_engine)
+    Base.metadata.create_all(_engine)
     database_ensure_initial()
 
 
@@ -218,3 +219,5 @@ def database_ensure_initial():
         playlist = Playlist(id=1, name="Scratchpad")
         s.add(playlist)
         s.commit()
+
+    s.close()

@@ -172,6 +172,8 @@ class Scanner(object):
         if track.type not in settings.NO_TRANSCODE_FORMATS:
             self.transcode(s, track)
 
+        s.close()
+
     def transcode(self, s, track):
         at = audiotranscode.AudioTranscode()
         stream = at.transcode_stream(track.file, settings.TRANSCODE_FORMAT)
@@ -201,6 +203,7 @@ class Scanner(object):
                 continue
             if not os.path.isfile(cover.file):
                 self.handle_cover_delete(cover)
+        s.close()
 
     def postprocess_albums(self):
         self.log.debug(u"Postprocessing albums ...")
@@ -235,6 +238,7 @@ class Scanner(object):
                 album.artist = test
 
         s.commit()
+        s.close()
         self.log.debug(u"Found artist for {} new albums".format(found))
             
     def postprocess_covers(self):
@@ -289,6 +293,7 @@ class Scanner(object):
 
         # That's that, commit changes for this album
         s.commit()
+        s.close()
         self._cover_art = {}  # Clear cover art cache
         self.log.debug(u"Found and attached {} new covers.".format(found,))
 
@@ -332,6 +337,7 @@ class Scanner(object):
 
         # Save changes
         s.commit()
+        s.close()
 
     def handle_cover_delete(self, cover):
         s = session_get()
@@ -339,6 +345,7 @@ class Scanner(object):
             album.cover = 1
         s.query(Cover).filter_by(id=cover.id, deleted=False).update({'deleted': True, 'updated': utc_now()})
         s.commit()
+        s.close()
             
     def handle_delete(self, path):
         track = None
@@ -355,6 +362,7 @@ class Scanner(object):
                 cover = s.query(Cover).filter_by(file=path, deleted=False).one()
             except NoResultFound:
                 return
+        s.close()
 
         # If we found a cover, remove it and clear references to it from albums
         if cover:
@@ -418,6 +426,7 @@ class Scanner(object):
         s.query(Artist).delete()
         s.query(Cover).delete()
         s.commit()
+        s.close()
         database_ensure_initial()
 
     def scan_all(self):
