@@ -190,8 +190,8 @@ class Session(Base):
 _session = sessionmaker()
 
 
-def database_init(dbfile):
-    engine = create_engine('sqlite:///{}'.format(dbfile))
+def database_init(engine_str):
+    engine = create_engine(engine_str)
     _session.configure(bind=engine)
     Base.metadata.create_all(engine)
     database_ensure_initial()
@@ -209,8 +209,9 @@ def database_ensure_initial():
         artist = Artist(id=1, name="Unknown")
         album = Album(id=1, title="Unknown", artist=1, cover=1)
         s.add(cover)
-        s.add(album)
         s.add(artist)
+        s.commit()
+        s.add(album)
         s.commit()
 
     if s.query(Playlist).count() == 0:

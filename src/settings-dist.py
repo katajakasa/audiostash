@@ -81,8 +81,9 @@ SCAND_LOGFILE = None
 # Level 3 = Error
 LOG_LEVEL = 1
 
-# Database file location. Currently only sqlite3 is supported.
-DBFILE = os.path.join(BASEDIR, "audiostash.db")
+# Database configuration. Use sqlalchemy config string.
+DATABASE_CONFIG='sqlite:///{}'.format(os.path.join(BASEDIR, "audiostash.db"))
+#DATABASE_CONFIG='mysql://username:password@localhost/databasename'
 
 # No point in changing these
 PUBLIC_PATH = os.path.join(BASEDIR, "public")

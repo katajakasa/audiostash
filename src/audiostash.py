@@ -472,10 +472,9 @@ if __name__ == '__main__':
     log.info("Starting AudioStash server on port {}.".format(settings.PORT))
     if settings.DEBUG:
         log.debug("Public path = {}".format(settings.PUBLIC_PATH))
-        log.debug("Database path = {}".format(settings.DBFILE))
 
     # Set up database
-    database_init(settings.DBFILE)
+    database_init(settings.DATABASE_CONFIG)
 
     # Set up mimetypes
     mimetypes.init()
@@ -489,7 +488,7 @@ if __name__ == '__main__':
         (r'/cover/([a-z0-9]+)/(\d)/(\d+)$', CoverHandler),
         (r'/(.*)$', web.StaticFileHandler, {'path': settings.PUBLIC_PATH, 'default_filename': 'index.html'}),
     ]
-    
+
     conf = {
         'debug': settings.DEBUG,
     }

@@ -478,7 +478,7 @@ if __name__ == '__main__':
     ensure_dir(settings.MUSIC_CACHE_DIRECTORY)
 
     # Init database and bootstrap the scanner
-    database_init(settings.DBFILE)
+    database_init(settings.DATABASE_CONFIG)
     scanner = Scanner(log=mlog, cleanup=is_initial)
 
     # There should be okay on windows ...
