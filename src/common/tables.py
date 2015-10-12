@@ -192,7 +192,7 @@ _session = sessionmaker()
 
 
 def database_init(engine_str):
-    _engine = create_engine(engine_str)
+    _engine = create_engine(engine_str, encoding='utf8', convert_unicode=True, pool_size=200, max_overflow=0)
     _session.configure(bind=_engine)
     Base.metadata.create_all(_engine)
     database_ensure_initial()
