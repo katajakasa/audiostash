@@ -367,11 +367,8 @@ class CoverHandler(web.RequestHandler):
         self.set_header("Content-Type", mimetypes.guess_type("file://"+cover_file)[0])
         try:
             with file(cover_file, 'rb') as f:
-                def get_data(callback):
-                    callback(f.read())
-
-                data = yield gen.Task(get_data)
-                self.write(data)
+                ret = yield gen.Task(self.get_data, f)
+                self.write(ret)
         except IOError:
             self.set_status(404)
             self.finish("404")
@@ -379,6 +376,9 @@ class CoverHandler(web.RequestHandler):
             return
 
         self.finish()
+
+    def get_data(self, handle, callback):
+        return callback(handle.read())
 
 
 class TrackHandler(web.RequestHandler):
@@ -453,19 +453,13 @@ class TrackHandler(web.RequestHandler):
                 self.set_header("Content-Range", "bytes {}-{}/{}".format(range_start, range_end, size))
                 self.flush()
 
-                # Forward to starting position
+                # Forward to starting position and start reading data
                 f.seek(range_start)
-
                 while left:
-                    r = 1048576 if 1048576 < left else left
-
-                    def get_data(callback):
-                        callback(f.read(r))
-
-                    data = yield gen.Task(get_data)
-                    left -= r
+                    r = 16384 if 16384 < left else left
+                    data = yield gen.Task(self.get_data, (f, r))
                     self.write(data)
-                    self.flush()
+                    left -= r
         except IOError:
             self.set_status(404)
             self.finish("404")
@@ -478,6 +472,9 @@ class TrackHandler(web.RequestHandler):
             self.finish()
         except HTTPOutputError, o:
             log.error("Error while serving track ID {}: {}.".format(song_id, o))
+
+    def get_data(self, d, callback):
+        return callback(d[0].read(d[1]))
 
 
 if __name__ == '__main__':
