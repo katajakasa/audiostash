@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Text, Bool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from common.utils import utc_now
+from audiostash.common.utils import utc_now
 
 Base = declarative_base()
 

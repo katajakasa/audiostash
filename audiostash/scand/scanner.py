@@ -2,28 +2,19 @@
 
 import os
 import mutagen
-import argparse
-import signal
+import logging
 
-from common import audiotranscode
-from common.stashlog import StashLog
-from common.tables import \
-    database_init, database_ensure_initial, session_get, \
+from audiostash.common import audiotranscode
+from audiostash.common.tables import \
+    database_ensure_initial, session_get, \
     Track, Album, Directory, Artist, Cover
-from common.utils import decode_path, match_track_filename, get_or_create, utc_now
-import settings
+from audiostash.common.utils import decode_path, match_track_filename, get_or_create, utc_now
+from audiostash import settings
 from twisted.internet import reactor, task
 from sqlalchemy.orm.exc import NoResultFound
 from PIL import Image
 
-_ver = "v0.1"
-_name = "Audiostash Indexer Daemon " + _ver
-
-# Handle arguments
-parser = argparse.ArgumentParser(description=_name)
-parser.add_argument('-i', '--initial', action="store_true", default=False, help='Do an initial scan and conversion.')
-args = parser.parse_args()
-is_initial = args.initial
+log = logging.getLogger(__name__)
 
 
 class Scanner(object):
@@ -69,7 +60,7 @@ class Scanner(object):
         try:
             m = mutagen.File(path)
         except:
-            self.log.warning(u"Could not read header for {}".format(path))
+            log.warning(u"Could not read header for %s", path)
 
         # Set correct sizes
         track.bytes_len = fsize
@@ -188,16 +179,16 @@ class Scanner(object):
                 maxlen += len(data)
             track.bytes_tc_len = maxlen
             s.commit()
-            self.log.debug("Transcoded ID {}, result size was {}.".format(track.id, maxlen))
+            log.debug("Transcoded ID %d, result size was %d.", track.id, maxlen)
 
     def preprocess_deleted(self):
         s = session_get()
 
-        self.log.debug(u"Removing deleted tracks from database ...")
+        log.debug(u"Removing deleted tracks from database ...")
         for track in s.query(Track).filter_by(deleted=False):
             if not os.path.isfile(track.file):
                 self.handle_track_delete(track)
-        self.log.debug(u"Removing deleted covers from database ...")
+        log.debug(u"Removing deleted covers from database ...")
         for cover in s.query(Cover).filter_by(deleted=False):
             if cover.id == 1:
                 continue
@@ -206,7 +197,7 @@ class Scanner(object):
         s.close()
 
     def postprocess_albums(self):
-        self.log.debug(u"Postprocessing albums ...")
+        log.debug(u"Postprocessing albums ...")
         s = session_get()
         found = 0
         for album in s.query(Album).filter_by(deleted=False):
@@ -239,10 +230,10 @@ class Scanner(object):
 
         s.commit()
         s.close()
-        self.log.debug(u"Found artist for {} new albums".format(found))
+        log.debug(u"Found artist for %d new albums", found)
             
     def postprocess_covers(self):
-        self.log.debug(u"Postprocessing covers ...")
+        log.debug(u"Postprocessing covers ...")
         found = 0
         s = session_get()
         for album in s.query(Album).filter_by(deleted=False):
@@ -273,7 +264,7 @@ class Scanner(object):
                         img.thumbnail(size, Image.ANTIALIAS)
                         img.save(out_file, "JPEG")
                     except IOError:
-                        self.log.error("Unable to create a small thumbnail for cover ID {}".format(cover.id))
+                        log.error(u"Unable to create a small thumbnail for cover ID %d", cover.id)
 
                     try:
                         img = Image.open(cover_art[0])
@@ -282,7 +273,7 @@ class Scanner(object):
                         img.thumbnail(size, Image.ANTIALIAS)
                         img.save(out_file, "JPEG")
                     except IOError:
-                        self.log.error("Unable to create a medium thumbnail for cover ID {}".format(cover.id))
+                        log.error(u"Unable to create a medium thumbnail for cover ID %d", cover.id)
 
                     # Set new cover id for album, and update tracks and the album timestamp for sync
                     s.query(Track).filter_by(album=album.id).update({'updated': utc_now()})
@@ -295,7 +286,7 @@ class Scanner(object):
         s.commit()
         s.close()
         self._cover_art = {}  # Clear cover art cache
-        self.log.debug(u"Found and attached {} new covers.".format(found,))
+        log.debug(u"Found and attached %d new covers.", found)
 
     def handle_cover(self, path, ext):
         name = os.path.splitext(os.path.basename(path))[0]
@@ -401,7 +392,7 @@ class Scanner(object):
                 full_path = os.path.join(decode_path(dir_name), decode_path(mfile))
                 self._files += 1
                 if self._files % 500 == 0:
-                    self.log.debug("{} files handled.".format(self._files))
+                    log.debug(u"%d files handled.", self._files)
                 self.handle_file(full_path, is_audiobook)
 
             # Handle subdirs
@@ -409,16 +400,16 @@ class Scanner(object):
                 self.traverse_dir(mdir, is_audiobook)
 
     def process_files(self):
-        self.log.info(u"Scanning directory " + settings.MUSIC_DIRECTORY)
+        log.info(u"Scanning directory %s", settings.MUSIC_DIRECTORY)
         self._files = 0
         self._dirs = 0
         self._cover_art = {}
         self.traverse_dir(settings.MUSIC_DIRECTORY, False)
         self.traverse_dir(settings.AUDIOBOOK_DIRECTORY, True)
-        self.log.info(u"Found {} files in {} directories.".format(self._files, self._dirs))
+        log.info(u"Found %d files in %d directories.", self._files, self._dirs)
 
     def clean_db(self):
-        self.log.info(u"Clearing old data ...")
+        log.info(u"Clearing old data ...")
         s = session_get()
         s.query(Track).delete()
         s.query(Album).delete()
@@ -430,21 +421,19 @@ class Scanner(object):
         database_ensure_initial()
 
     def scan_all(self):
-        self.log.info(u"Scanning everything ...")
+        log.info(u"Scanning everything ...")
         self.preprocess_deleted()
         self.process_files()
         self.postprocess_albums()
         self.postprocess_covers()
         self.schedule_scan()
-        self.log.info(u"Scan complete")
+        log.info(u"Scan complete")
 
     def schedule_scan(self):
-        self.log.info("Scheduling a new scan after 30 minutes.")
+        log.info(u"Scheduling a new scan after 30 minutes.")
         self._update_task = task.deferLater(reactor, 1800, self.scan_all)
 
-    def __init__(self, log=None, cleanup=False):
-        self.log = log
-        self.log.info(_name)
+    def __init__(self, cleanup=False):
         self._cover_art = {}  # Save found cover files here
         self._files = 0
         self._dirs = 0
@@ -456,51 +445,17 @@ class Scanner(object):
             self.clean_db()
 
     def run(self):
-        self.log.info("Initial scan ...")
+        log.info(u"Initial scan ...")
         self.scan_all()
-        self.log.debug(u"Waiting for events ...")
+        log.debug(u"Waiting for events ...")
         reactor.run()
-        self.log.debug(u'All done.')
+        log.debug(u'All done.')
 
     def stop(self):
         self._run = False
         reactor.stop()
-        self.log.info("Quitting ...")
+        log.info(u"Quitting ...")
 
 
-def sig_handler(signum, frame):
-    scanner.log.info(u"Caught signal {}, quitting ...".format(signum))
-    scanner.stop()
 
 
-def ensure_dir(f):
-    d = os.path.dirname(f)
-    if not os.path.exists(d):
-        os.makedirs(d)
-
-
-if __name__ == '__main__':
-    mlog = StashLog(debug=settings.DEBUG, level=settings.LOG_LEVEL, logfile=settings.SCAND_LOGFILE)
-
-    # Make sure the cover cache directory exists
-    ensure_dir(settings.COVER_CACHE_DIRECTORY)
-    ensure_dir(settings.MUSIC_CACHE_DIRECTORY)
-
-    # Init database and bootstrap the scanner
-    database_init(settings.DATABASE_CONFIG)
-    scanner = Scanner(log=mlog, cleanup=is_initial)
-
-    # There should be okay on windows ...
-    signal.signal(signal.SIGTERM, sig_handler)
-    signal.signal(signal.SIGINT, sig_handler)
-
-    # ... while these are not. Try for linux' sake, though.
-    try:
-        signal.signal(signal.SIGHUP,  sig_handler)
-        signal.signal(signal.SIGQUIT, sig_handler)
-    except AttributeError:
-        pass
-
-    # Just run as long as possible, then exit with 0 status.
-    scanner.run()
-    exit(0)

@@ -1,6 +1,6 @@
 .idea
-src/audiostash.db
-src/settings.py
+audiostash/audiostash.db
+audiostash/settings.py
 *.pyc
-src/public/static/components/*
+audiostash/public/static/components/*
 200*.js
