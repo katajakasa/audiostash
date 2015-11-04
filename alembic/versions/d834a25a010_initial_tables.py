@@ -145,10 +145,10 @@ def downgrade():
 
 
 def data_upgrades():
-    op.execute("insert into cover (id, file) values (1, '')")
-    op.execute("insert into artist (id, name) values (1, 'Unknown')")
-    op.execute("insert into album (id, title, artist, cover) values (1, 'Unknown', 1, 1)")
-    op.execute("insert into playlist (id, name) values (1, 'Scratchpad')")
+    op.execute("INSERT INTO `cover` (`deleted`, `updated`, `id`, `file`) VALUES ('0', '2000-01-01 00:00:00', '1', NULL)")
+    op.execute("INSERT INTO `artist` (`deleted`, `updated`, `id`, `name`) VALUES ('0', '2000-01-01 00:00:00', '1', 'Unknown')")
+    op.execute("INSERT INTO `album` (`deleted`, `updated`, `id`, `title`, `artist`, `cover`, `is_audiobook`) VALUES ('0', '2000-01-01 00:00:00', '1', 'Unknown', '1', '1', '0');")
+    op.execute("INSERT INTO `playlist` (`deleted`, `updated`, `id`, `name`) VALUES ('0', '2000-01-01 00:00:00', '1', 'Scratchpad');")
 
 
 def data_downgrades():

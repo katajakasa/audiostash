@@ -7,7 +7,7 @@ import logging
 from audiostash.common import audiotranscode
 from audiostash.common.tables import \
     database_ensure_initial, session_get, \
-    Track, Album, Directory, Artist, Cover
+    Track, Album, Directory, Artist, Cover, Playlist
 from audiostash.common.utils import decode_path, match_track_filename, get_or_create, utc_now
 from audiostash import settings
 from twisted.internet import reactor, task
@@ -412,10 +412,11 @@ class Scanner(object):
         log.info(u"Clearing old data ...")
         s = session_get()
         s.query(Track).delete()
-        s.query(Album).delete()
+        s.query(Album).filter(id > 1).delete()
         s.query(Directory).delete()
-        s.query(Artist).delete()
-        s.query(Cover).delete()
+        s.query(Artist).filter(id > 1).delete()
+        s.query(Cover).filter(id > 1).delete()
+        s.query(Playlist).filter(id > 1).delete()
         s.commit()
         s.close()
         database_ensure_initial()
