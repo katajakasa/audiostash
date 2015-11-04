@@ -145,10 +145,10 @@ def downgrade():
 
 
 def data_upgrades():
-    op.execute("INSERT INTO `cover` (`deleted`, `updated`, `id`, `file`) VALUES ('0', '2000-01-01 00:00:00', '1', NULL)")
-    op.execute("INSERT INTO `artist` (`deleted`, `updated`, `id`, `name`) VALUES ('0', '2000-01-01 00:00:00', '1', 'Unknown')")
-    op.execute("INSERT INTO `album` (`deleted`, `updated`, `id`, `title`, `artist`, `cover`, `is_audiobook`) VALUES ('0', '2000-01-01 00:00:00', '1', 'Unknown', '1', '1', '0');")
-    op.execute("INSERT INTO `playlist` (`deleted`, `updated`, `id`, `name`) VALUES ('0', '2000-01-01 00:00:00', '1', 'Scratchpad');")
+    op.execute("INSERT INTO `cover` (`deleted`, `updated`, `id`, `file`) VALUES ('0', '2015-01-01 00:00:00', '1', NULL)")
+    op.execute("INSERT INTO `artist` (`deleted`, `updated`, `id`, `name`) VALUES ('0', '2015-01-01 00:00:00', '1', 'Unknown')")
+    op.execute("INSERT INTO `album` (`deleted`, `updated`, `id`, `title`, `artist`, `cover`, `is_audiobook`) VALUES ('0', '2015-01-01 00:00:00', '1', 'Unknown', '1', '1', '0');")
+    op.execute("INSERT INTO `playlist` (`deleted`, `updated`, `id`, `name`) VALUES ('0', '2015-01-01 00:00:00', '1', 'Scratchpad');")
 
 
 def data_downgrades():
