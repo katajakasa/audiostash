@@ -35,7 +35,7 @@ class CoverHandler(web.RequestHandler):
             s.close()
             self.set_status(404)
             self.finish("404")
-            log.warning(u"Cover ID %d does not exist.", cover_id)
+            log.warning(u"Cover ID %s does not exist.", cover_id)
             return
 
         s.close()

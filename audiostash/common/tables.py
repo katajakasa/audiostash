@@ -187,15 +187,12 @@ class Session(Base):
     start = Column(DateTime(timezone=True), default=utc_now())
 
 
-_engine = None
 _session = sessionmaker()
 
 
 def database_init(engine_str):
-    _engine = create_engine(engine_str, encoding='utf8', convert_unicode=True, pool_size=200, max_overflow=0)
+    _engine = create_engine(engine_str, pool_recycle=3600)
     _session.configure(bind=_engine)
-    Base.metadata.create_all(_engine)
-    database_ensure_initial()
 
 
 def session_get():
@@ -203,21 +200,4 @@ def session_get():
 
 
 def database_ensure_initial():
-    s = session_get()
-
-    if s.query(Album).count() == 0:
-        cover = Cover(id=1, file="")
-        artist = Artist(id=1, name="Unknown")
-        album = Album(id=1, title="Unknown", artist=1, cover=1)
-        s.add(cover)
-        s.add(artist)
-        s.commit()
-        s.add(album)
-        s.commit()
-
-    if s.query(Playlist).count() == 0:
-        playlist = Playlist(id=1, name="Scratchpad")
-        s.add(playlist)
-        s.commit()
-
-    s.close()
+    pass

@@ -23,10 +23,11 @@ Installation
 1. Copy sec/settings-dist.py to settings.py.
 2. Change settings to suit yourself.
 3. Set up a virtualenv and install dependencies (see above).
-4. ```python -m audiostash.scand.main``` to scan your files to database. After scan is done, close with CTRL+C.
-5. ```python -m audiostash.webui.main``` to run the server. Feel free to proxy with nginx or others.
-6. Connect with browser to your server to the port you defined in settings.py.
-7. Enjoy!
+4. Set up database by running ```alembic upgrade head```.
+5. ```python -m audiostash.scand.main``` to scan your files to database. After scan is done, close with CTRL+C.
+6. ```python -m audiostash.webui.main``` to run the server. Feel free to proxy with nginx or others.
+7. Connect with browser to your server to the port you defined in settings.py.
+8. Enjoy!
 
 For proxying with nginx, there is a skeleton config file in deploy/audiostasn.nginx
 For autostarting with systemd, there are service files in deploy-directory.

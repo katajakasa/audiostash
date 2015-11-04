@@ -8,7 +8,6 @@ var app = angular.module(
         'ng.sockjs',
         'ui.bootstrap',
         'ui.grid',
-        'windowEventBroadcasts',
         'dialogs.main',
         'ui.grid.draggable-rows'
     ]

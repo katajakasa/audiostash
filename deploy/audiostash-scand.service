@@ -2,7 +2,8 @@
 Description=AudioStash scanner daemon
 
 [Service]
-ExecStart=/var/virtualenvs/audiostash/bin/python /var/www/audiostash/audiostash/scand/main.py
+WorkingDirectory=/var/www/audiostash/
+ExecStart=/var/virtualenvs/audiostash/bin/python -m audiostash.scand.main
 User=www-data
 Group=www-data
 

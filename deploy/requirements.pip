@@ -6,4 +6,5 @@ mutagen==1.29
 isodate==0.5.1
 pillow==2.6.0
 passlib==1.6.2
+alembic
 pytz

@@ -42,7 +42,7 @@ server {
 
     # Set this to point to the public directory
     location / {
-        root /var/www/audiostash/src/public;
+        root /var/www/audiostash/audiostash/public;
         index index.html;
     }
 }
