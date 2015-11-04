@@ -408,19 +408,6 @@ class Scanner(object):
         self.traverse_dir(settings.AUDIOBOOK_DIRECTORY, True)
         log.info(u"Found %d files in %d directories.", self._files, self._dirs)
 
-    def clean_db(self):
-        log.info(u"Clearing old data ...")
-        s = session_get()
-        s.query(Track).delete()
-        s.query(Album).filter(id > 1).delete()
-        s.query(Directory).delete()
-        s.query(Artist).filter(id > 1).delete()
-        s.query(Cover).filter(id > 1).delete()
-        s.query(Playlist).filter(id > 1).delete()
-        s.commit()
-        s.close()
-        database_ensure_initial()
-
     def scan_all(self):
         log.info(u"Scanning everything ...")
         self.preprocess_deleted()
@@ -434,16 +421,12 @@ class Scanner(object):
         log.info(u"Scheduling a new scan after 30 minutes.")
         self._update_task = task.deferLater(reactor, 1800, self.scan_all)
 
-    def __init__(self, cleanup=False):
+    def __init__(self):
         self._cover_art = {}  # Save found cover files here
         self._files = 0
         self._dirs = 0
         self._run = True
         self._update_task = None
-
-        # If doing a re-indexing
-        if cleanup or session_get().query(Track).count() == 0:
-            self.clean_db()
 
     def run(self):
         log.info(u"Initial scan ...")

@@ -19,9 +19,7 @@ def ensure_dir(f):
 if __name__ == '__main__':
     # Handle arguments
     parser = argparse.ArgumentParser(description="Audiostash Indexer Daemon")
-    parser.add_argument('-i', '--initial', action="store_true", default=False, help='Do an initial scan and conversion.')
     args = parser.parse_args()
-    is_initial = args.initial
 
     # Find correct log level
     level = {
@@ -55,7 +53,7 @@ if __name__ == '__main__':
 
     # Init database and bootstrap the scanner
     database_init(settings.DATABASE_CONFIG)
-    scanner = Scanner(cleanup=is_initial)
+    scanner = Scanner()
 
     # There should be okay on windows ...
     def sig_handler(signum, frame):
