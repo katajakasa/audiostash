@@ -30,12 +30,14 @@ import os
 import time
 from distutils.spawn import find_executable
 
+
 MIMETYPES = {
     'mp3': 'audio/mpeg',
     'ogg': 'audio/ogg',
     'flac': 'audio/flac',
     'aac': 'audio/aac',
     'm4a': 'audio/m4a',
+    'm4b': 'audio/m4b',
     'wav': 'audio/wav',
 }
 
@@ -180,6 +182,7 @@ class AudioTranscode:
         Decoder('flac', ['flac', '-F', '-d', '-c', 'INPUT']),
         Decoder('aac', ['faad', '-w', 'INPUT']),
         Decoder('m4a', ['faad', '-w', 'INPUT']),
+        Decoder('m4b', ['faad', '-w', 'INPUT']),
         Decoder('wav', ['cat', 'INPUT']),
     ]
 
