@@ -236,13 +236,15 @@ class AudioStashSock(SockJSConnection):
 
     def sync_table(self, name, table, remote_ts, push=False):
         # Send message containing all new data in the table
+        s = session_get()
         self.send_message('sync', {
             'query': 'request',
             'table': name,
             'ts': to_isodate(utc_now()),
             'push': push,
-            'data': [t.serialize() for t in session_get().query(table).filter(table.updated > remote_ts)]
+            'data': [t.serialize() for t in s.query(table).filter(table.updated > remote_ts)]
         })
+        s.close()
 
     def on_sync_msg(self, packet_msg):
         if not self.authenticated:
