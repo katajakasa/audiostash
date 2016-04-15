@@ -62,6 +62,7 @@ class Scanner(object):
         try:
             track = s.query(Track).filter_by(file=path).one()
             if fsize == track.bytes_len:
+                s.close()
                 return
         except NoResultFound:
             track = Track(file=path, album=1, artist=1, type=ext[1:])
