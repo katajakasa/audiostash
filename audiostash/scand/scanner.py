@@ -40,6 +40,17 @@ class Scanner(object):
                 pass
         return None
 
+    @staticmethod
+    def _get_tag_tuple(m, keys):
+        for tag in keys:
+            try:
+                return m[tag][0]
+            except KeyError:
+                pass
+            except ValueError:
+                pass
+        return None
+
     # TODO: Better tag lookup
     # TODO: Use subsessions for track components (artist, etc)
     def handle_audio(self, path, ext, is_audiobook):
@@ -84,22 +95,28 @@ class Scanner(object):
                                             'TRACKTITLE', 'TrackTitle', 'Track Title'))
 
             # Find track number
-            track_number = self._get_tag(m, ('TRCK', 'TXXX:TRACK', 'Track', 'trkn', 'TRACK', 'tracknumber', 'TRACKNUMBER'))
-            if '/' in track_number:
-                track.track = int(track_number.split('/')[0])
-            elif type(track_number) == tuple:
+            track_tags = ('TRCK', 'TXXX:TRACK', 'Track', 'trkn', 'TRACK', 'tracknumber', 'TRACKNUMBER')
+            track_number = self._get_tag_tuple(m, track_tags)
+            if type(track_number) == tuple:
                 track.track = int(track_number[0])
-            elif track_number:
-                track.track = int(track_number)
+            else:
+                track_number = self._get_tag(m, track_tags)
+                if '/' in track_number:
+                    track.track = int(track_number.split('/')[0])
+                elif track_number:
+                    track.track = int(track_number)
 
             # Find disc number
-            track_disc = self._get_tag(m, ('TXXX:DISCNUMBER', 'discnumber', 'DISCNUMBER', 'TPOS'))
-            if '/' in track_disc:
-                track.disc = int(track_disc.split('/')[0])
-            elif type(track_disc) == tuple:
+            disc_tags = ('TXXX:DISCNUMBER', 'discnumber', 'DISCNUMBER', 'TPOS')
+            track_disc = self._get_tag_tuple(m, disc_tags)
+            if type(track_disc) == tuple:
                 track.disc = int(track_disc[0])
-            elif track_disc:
-                track.disc = int(track_disc)
+            else:
+                track_disc = self._get_tag(m, disc_tags)
+                if '/' in track_disc:
+                    track.disc = int(track_disc.split('/')[0])
+                elif track_disc:
+                    track.disc = int(track_disc)
 
             # Find Genre/Content type
             track.genre = self._get_tag(m, ('TCON', u'@gen', 'gnre', 'Genre', 'genre', 'GENRE', 'TXXX:GENRE'))
