@@ -87,6 +87,8 @@ class Scanner(object):
             track_number = self._get_tag(m, ('TRCK', 'TXXX:TRACK', 'Track', 'trkn', 'TRACK', 'tracknumber', 'TRACKNUMBER'))
             if '/' in track_number:
                 track.track = int(track_number.split('/')[0])
+            elif type(track_number) == tuple:
+                track.track = int(track_number[0])
             elif track_number:
                 track.track = int(track_number)
 
@@ -94,6 +96,8 @@ class Scanner(object):
             track_disc = self._get_tag(m, ('TXXX:DISCNUMBER', 'discnumber', 'DISCNUMBER', 'TPOS'))
             if '/' in track_disc:
                 track.disc = int(track_disc.split('/')[0])
+            elif type(track_disc) == tuple:
+                track.disc = int(track_disc[0])
             elif track_disc:
                 track.disc = int(track_disc)
 
